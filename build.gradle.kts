@@ -14,6 +14,17 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "org.example.Main"
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
 }
