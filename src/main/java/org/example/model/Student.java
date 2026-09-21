@@ -117,6 +117,6 @@ public class Student {
 
     @Override
     public String toString() {
-        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + department + " | GPA: " + gpa + " | Standing: " + academicStanding();
+        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + department + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
     }
 }

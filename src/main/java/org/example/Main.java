@@ -1,11 +1,28 @@
 package org.example;
 
+import org.example.controller.StudentController;
 import org.example.model.Student;
+import org.example.repository.CrudRepository;
+import org.example.repository.InMemoryStudentRepository;
+import org.example.service.StudentService;
+import org.example.serviceImpl.StudentServiceImpl;
+import org.example.ui.ConsoleApplication;
+import org.example.ui.InputHandler;
+
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        Student student = new Student(1L, "Hassan", "B22110006055", "hassan@gmail.com", "CS", 3.21);
+        CrudRepository<Student, Long> crudRepository = new InMemoryStudentRepository();
 
-        System.out.println(student.toString());;
+        StudentService studentService = new StudentServiceImpl(crudRepository);
+
+        StudentController studentController = new StudentController(studentService);
+
+        InputHandler input = new InputHandler(new Scanner(System.in));
+
+        ConsoleApplication application = new ConsoleApplication(studentController, input);
+
+        application.start();
     }
 }
