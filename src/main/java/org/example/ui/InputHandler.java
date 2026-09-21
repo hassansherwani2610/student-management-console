@@ -23,6 +23,19 @@ public class InputHandler {
         }
     }
 
+    public long readLong(String message) {
+        while (true) {
+            System.out.print(message);
+            String input = scanner.nextLine().trim();
+
+            try {
+                return Long.parseLong(input);
+            } catch (NumberFormatException exception) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+
     public double readDouble(String message) {
         while (true) {
             System.out.print(message);
