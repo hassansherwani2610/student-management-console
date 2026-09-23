@@ -1,10 +1,12 @@
 package org.example.ui;
 
+import org.example.controller.CourseController;
 import org.example.controller.DepartmentController;
 import org.example.controller.StudentController;
 import org.example.exception.DuplicateStudentException;
 import org.example.exception.StudentNotFoundException;
 import org.example.exception.ValidationException;
+import org.example.model.Course;
 import org.example.model.Department;
 import org.example.model.Student;
 
@@ -14,12 +16,14 @@ public class ConsoleApplication {
 
     private final StudentController studentController;
     private final DepartmentController departmentController;
+    private final CourseController courseController;
     private final InputHandler input;
     private boolean running = true;
 
-    public ConsoleApplication(StudentController studentController, DepartmentController departmentController, InputHandler input) {
+    public ConsoleApplication(StudentController studentController, DepartmentController departmentController, CourseController courseController, InputHandler input) {
         this.studentController = studentController;
         this.departmentController = departmentController;
+        this.courseController = courseController;
         this.input = input;
     }
 
@@ -73,9 +77,17 @@ public class ConsoleApplication {
 
             case 10 -> deleteDepartment();
 
+            case 11 -> addCourse();
+
+            case 12 -> viewAllCourses();
+
+            case 13 -> updateCourse();
+
+            case 14 -> deleteCourse();
+
             case 0 -> running = false;
 
-            default -> System.out.println("Invalid menu option. Choose a number from 0 to 10.");
+            default -> System.out.println("Invalid menu option. Choose a number from 0 to 14.");
         }
     }
 
@@ -389,6 +401,98 @@ public class ConsoleApplication {
         }
     }
 
+    private void addCourse() {
+
+        System.out.println("\n--- Add Course ---");
+
+        Long id = input.readLong("Course ID: ");
+
+        String name = input.readRequiredText("Course name: ");
+
+        String code = input.readRequiredText("Course code: ");
+
+        int creditHours = input.readInt("Credit hours: ");
+
+        Course course = courseController.createCourse(
+                id,
+                name,
+                code,
+                creditHours
+        );
+
+        System.out.println("\nCourse created successfully.");
+
+        System.out.println(course);
+    }
+
+    private void viewAllCourses() {
+
+        System.out.println("\n--- All Courses ---");
+
+        List<Course> courses = courseController.getAllCourses();
+
+        if (courses.isEmpty()) {
+            System.out.println("No courses found.");
+
+            return;
+        }
+
+        courses.forEach(System.out::println);
+
+        System.out.println("\nTotal: " + courses.size());
+    }
+
+    private void updateCourse() {
+
+        System.out.println("\n--- Update Course ---");
+
+        Long id = input.readLong("Course ID: ");
+
+        Course current = courseController.getCourseById(id);
+
+        System.out.println("\nCurrent record:");
+
+        System.out.println(current);
+
+        String name = input.readRequiredText("New course name: ");
+
+        String code = input.readRequiredText("New course code: ");
+
+        int creditHours = input.readInt("New credit hours: ");
+
+        Course updated = courseController.updateCourse(
+                id,
+                name,
+                code,
+                creditHours
+        );
+
+        System.out.println("\nCourse updated successfully.");
+
+        System.out.println(updated);
+    }
+
+    private void deleteCourse() {
+
+        System.out.println("\n--- Delete Course ---");
+
+        Long id = input.readLong("Course ID: ");
+
+        Course course = courseController.getCourseById(id);
+
+        System.out.println("\nCourse to delete:");
+
+        System.out.println(course);
+
+        if (input.readYesNo("Are you sure you want to delete this course?")) {
+            courseController.deleteCourse(id);
+
+            System.out.println("Course deleted successfully.");
+        } else {
+            System.out.println("Delete operation cancelled.");
+        }
+    }
+
     private String getDepartmentName(Student student) {
         return departmentController.getDepartmentById(student.getDepartment()).getName();
     }
@@ -432,6 +536,10 @@ public class ConsoleApplication {
                 8. View All Departments
                 9. Update Department
                 10. Delete Department
+                11. Add Course
+                12. View All Courses
+                13. Update Course
+                14. Delete Course
                 0. Exit
                 ----------------------------------------
                 """);

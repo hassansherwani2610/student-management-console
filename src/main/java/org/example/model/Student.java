@@ -113,10 +113,10 @@ public class Student {
 
     @Override
     public String toString() {
-        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentId + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
+        return "ID: " + id + " | Student Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentId + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
     }
 
     public String toString(String departmentName) {
-        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentName + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
+        return "ID: " + id + " | Student Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentName + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
     }
 }
