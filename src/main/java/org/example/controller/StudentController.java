@@ -1,6 +1,5 @@
 package org.example.controller;
 
-import org.example.enums.DepartmentEnum;
 import org.example.model.Student;
 import org.example.service.StudentService;
 
@@ -14,8 +13,8 @@ public class StudentController {
         this.studentService = studentService;
     }
 
-    public Student createStudent(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
-        return studentService.createStudent(id, name, seatNo, email, department, gpa);
+    public Student createStudent(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
+        return studentService.createStudent(id, name, seatNo, email, departmentId, gpa);
     }
 
     public List<Student> getAllStudents() {
@@ -34,8 +33,8 @@ public class StudentController {
         return studentService.updateEmail(id, email);
     }
 
-    public Student updateDepartment(Long id, DepartmentEnum department) {
-        return studentService.updateDepartment(id, department);
+    public Student updateDepartment(Long id, Long departmentId) {
+        return studentService.updateDepartment(id, departmentId);
     }
 
     public Student updateGpa(Long id, double gpa) {
@@ -46,20 +45,20 @@ public class StudentController {
         return studentService.updateSeatNo(id, seatNo);
     }
 
-    public Student updateAll(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
-        return studentService.updateAll(id, name, seatNo, email, department, gpa);
+    public Student updateAll(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
+        return studentService.updateAll(id, name, seatNo, email, departmentId, gpa);
     }
 
     public void deleteStudent(Long id) {
-        studentService.deleteStudent(id);
+        studentService.deleteStudentById(id);
     }
 
     public List<Student> searchByName(String keyword) {
         return studentService.searchByName(keyword);
     }
 
-    public List<Student> filterByDepartment(DepartmentEnum department) {
-        return studentService.filterByDepartment(department);
+    public List<Student> filterByDepartment(Long departmentId) {
+        return studentService.filterByDepartment(departmentId);
     }
 
     public List<Student> filterByGpa(double min, double max) {

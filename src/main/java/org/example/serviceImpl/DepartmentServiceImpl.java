@@ -67,6 +67,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public void deleteDepartmentById(Long id) {
+        getDepartmentById(id);
         repository.deleteById(id);
     }
 }

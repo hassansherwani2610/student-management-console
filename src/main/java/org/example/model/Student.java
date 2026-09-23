@@ -1,23 +1,21 @@
 package org.example.model;
 
-import org.example.enums.DepartmentEnum;
 import org.example.exception.ValidationException;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class Student {
-
     private final Long id;
     private String name;
     private String seatNo;
     private String email;
-    private DepartmentEnum department;
+    private Long departmentId;
     private double gpa;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
-    public Student(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
+    public Student(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
         if (id == null || id <= 0) {
             throw new ValidationException("Student ID must be greater than zero.");
         }
@@ -26,7 +24,7 @@ public class Student {
         setName(name);
         setSeatNo(seatNo);
         setEmail(email);
-        setDepartment(department);
+        setDepartment(departmentId);
         setGpa(gpa);
     }
 
@@ -76,16 +74,16 @@ public class Student {
         this.email = trimmedEmail;
     }
 
-    public DepartmentEnum getDepartment() {
-        return department;
+    public Long getDepartment() {
+        return departmentId;
     }
 
-    public void setDepartment(DepartmentEnum department) {
-        if (department == null) {
+    public void setDepartment(Long departmentId) {
+        if (departmentId == null) {
             throw new ValidationException("DepartmentEnum cannot be empty.");
         }
 
-        this.department = department;
+        this.departmentId = departmentId;
     }
 
     public double getGpa() {
@@ -115,6 +113,10 @@ public class Student {
 
     @Override
     public String toString() {
-        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | DepartmentEnum: " + department + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
+        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentId + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
+    }
+
+    public String toString(String departmentName) {
+        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + departmentName + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
     }
 }

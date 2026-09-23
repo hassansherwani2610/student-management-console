@@ -1,10 +1,10 @@
 package org.example.serviceImpl;
 
-import org.example.enums.DepartmentEnum;
 import org.example.exception.DuplicateStudentException;
 import org.example.exception.StudentNotFoundException;
 import org.example.model.Student;
 import org.example.repository.CrudRepository;
+import org.example.service.DepartmentService;
 import org.example.service.StudentService;
 
 import java.util.List;
@@ -13,9 +13,11 @@ import java.util.Objects;
 
 public class StudentServiceImpl implements StudentService {
     private final CrudRepository<Student, Long> repository;
+    private final DepartmentService departmentService;
 
-    public StudentServiceImpl(CrudRepository<Student, Long> repository) {
+    public StudentServiceImpl(CrudRepository<Student, Long> repository, DepartmentService departmentService) {
         this.repository = repository;
+        this.departmentService = departmentService;
     }
 
     private boolean emailExists(String email, Long id) {
@@ -29,7 +31,7 @@ public class StudentServiceImpl implements StudentService {
 
 
     @Override
-    public Student createStudent(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
+    public Student createStudent(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
         if (repository.existsById(id)) {
             throw new DuplicateStudentException("A student with ID " + id + " already exists in our system.");
         }
@@ -38,7 +40,9 @@ public class StudentServiceImpl implements StudentService {
             throw new DuplicateStudentException("A student with email " + email + " already exists in our system.");
         }
 
-        Student student = repository.save(new Student(id, name, seatNo, email, department, gpa));
+        departmentService.getDepartmentById(departmentId);
+
+        Student student = repository.save(new Student(id, name, seatNo, email, departmentId, gpa));
 
         return student;
     }
@@ -77,9 +81,12 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Student updateDepartment(Long id, DepartmentEnum department) {
+    public Student updateDepartment(Long id, Long departmentId) {
         Student student = getStudentById(id);
-        student.setDepartment(department);
+
+        departmentService.getDepartmentById(departmentId);
+
+        student.setDepartment(departmentId);
         return repository.update(student);
     }
 
@@ -98,7 +105,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Student updateAll(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
+    public Student updateAll(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
         Student student = getStudentById(id);
 
         if (emailExists(email, id)) {
@@ -108,7 +115,10 @@ public class StudentServiceImpl implements StudentService {
         student.setName(name);
         student.setSeatNo(seatNo);
         student.setEmail(email);
-        student.setDepartment(department);
+
+        departmentService.getDepartmentById(departmentId);
+
+        student.setDepartment(departmentId);
         student.setGpa(gpa);
 
         return repository.update(student);
@@ -116,6 +126,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void deleteStudentById(Long id) {
+        getStudentById(id);
         repository.deleteById(id);
     }
 
@@ -132,11 +143,13 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public List<Student> filterByDepartment(DepartmentEnum department) {
+    public List<Student> filterByDepartment(Long departmentId) {
+        departmentService.getDepartmentById(departmentId);
+
         return repository
                 .findAll()
                 .stream()
-                .filter(student -> student.getDepartment().equals(department))
+                .filter(student -> student.getDepartment().equals(departmentId))
                 .sorted((student1, student2) -> student1.getName().compareToIgnoreCase(student2.getName()))
                 .toList();
     }
