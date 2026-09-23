@@ -19,7 +19,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private boolean emailExists(String email, Long id) {
-        String formattedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String formattedEmail = email.trim();
 
         return repository
                 .findAll()
@@ -115,7 +115,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public void deleteStudent(Long id) {
+    public void deleteStudentById(Long id) {
         repository.deleteById(id);
     }
 

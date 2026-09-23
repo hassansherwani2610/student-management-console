@@ -2,6 +2,8 @@ package org.example.model;
 
 import org.example.enums.DepartmentEnum;
 import org.example.exception.ValidationException;
+
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class Student {
@@ -65,7 +67,7 @@ public class Student {
             throw new ValidationException("Email cannot be empty.");
         }
 
-        String trimmedEmail = email.trim();
+        String trimmedEmail = email.trim().toLowerCase(Locale.ROOT);
 
         if (!EMAIL_PATTERN.matcher(trimmedEmail).matches()) {
             throw new ValidationException("Please enter a valid email address.");

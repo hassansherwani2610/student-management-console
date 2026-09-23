@@ -24,7 +24,7 @@ public interface StudentService {
 
     public Student updateAll(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa);
 
-    public void deleteStudent(Long id);
+    public void deleteStudentById(Long id);
 
     public List<Student> searchByName(String keyword);
 
