@@ -1,5 +1,6 @@
 package org.example.serviceImpl;
 
+import org.example.enums.DepartmentEnum;
 import org.example.exception.DuplicateStudentException;
 import org.example.exception.StudentNotFoundException;
 import org.example.model.Student;
@@ -28,7 +29,7 @@ public class StudentServiceImpl implements StudentService {
 
 
     @Override
-    public Student createStudent(Long id, String name, String seatNo, String email, String department, double gpa) {
+    public Student createStudent(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
         if (repository.existsById(id)) {
             throw new DuplicateStudentException("A student with ID " + id + " already exists in our system.");
         }
@@ -76,7 +77,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Student updateDepartment(Long id, String department) {
+    public Student updateDepartment(Long id, DepartmentEnum department) {
         Student student = getStudentById(id);
         student.setDepartment(department);
         return repository.update(student);
@@ -97,7 +98,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Student updateAll(Long id, String name, String seatNo, String email, String department, double gpa) {
+    public Student updateAll(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
         Student student = getStudentById(id);
 
         if (emailExists(email, id)) {
@@ -131,13 +132,11 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public List<Student> filterByDepartment(String department) {
-        String formattedDepartment = department.trim().toLowerCase(Locale.ROOT);
-
+    public List<Student> filterByDepartment(DepartmentEnum department) {
         return repository
                 .findAll()
                 .stream()
-                .filter(student -> student.getDepartment().toLowerCase(Locale.ROOT).equals(formattedDepartment))
+                .filter(student -> student.getDepartment().equals(department))
                 .sorted((student1, student2) -> student1.getName().compareToIgnoreCase(student2.getName()))
                 .toList();
     }

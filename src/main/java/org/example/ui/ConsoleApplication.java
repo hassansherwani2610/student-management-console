@@ -1,6 +1,7 @@
 package org.example.ui;
 
 import org.example.controller.StudentController;
+import org.example.enums.DepartmentEnum;
 import org.example.exception.DuplicateStudentException;
 import org.example.exception.StudentNotFoundException;
 import org.example.exception.ValidationException;
@@ -64,7 +65,7 @@ public class ConsoleApplication {
         String name = input.readRequiredText("Name: ");
         String seatNo = input.readRequiredText("Seat Number: ");
         String email = input.readRequiredText("Email: ");
-        String department = input.readRequiredText("Department: ");
+        DepartmentEnum department = input.readDepartment("Department: ");
         double gpa = input.readDouble("GPA (0.0 - 4.0): ");
 
         Student student = studentController.createStudent(id, name, seatNo, email, department, gpa);
@@ -114,7 +115,7 @@ public class ConsoleApplication {
                 Select field to update:
                 1. Name
                 2. Email
-                3. Department
+                3. DepartmentEnum
                 4. GPA
                 5. Seat Number
                 6. All fields
@@ -137,7 +138,7 @@ public class ConsoleApplication {
             }
 
             case 3 -> {
-                String department = input.readRequiredText("New department: ");
+                DepartmentEnum department = input.readDepartment("Department: ");
                 updated = studentController.updateDepartment(id, department);
             }
 
@@ -155,7 +156,7 @@ public class ConsoleApplication {
                 String name = input.readRequiredText("New name: ");
                 String seatNo = input.readRequiredText("New seat number: ");
                 String email = input.readRequiredText("New email: ");
-                String department = input.readRequiredText("New department: ");
+                DepartmentEnum department = input.readDepartment("Department: ");
                 double gpa = input.readDouble("New GPA (0.0 - 4.0): ");
 
                 updated = studentController.updateAll(id, name, seatNo, email, department, gpa);
@@ -213,7 +214,7 @@ public class ConsoleApplication {
             }
 
             case 2 -> {
-                String department = input.readRequiredText("Department: ");
+                DepartmentEnum department = input.readDepartment("Department: ");
                 results = studentController.filterByDepartment(department);
             }
 

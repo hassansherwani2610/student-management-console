@@ -1,5 +1,7 @@
 package org.example.ui;
 
+import org.example.enums.DepartmentEnum;
+
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -59,6 +61,18 @@ public class InputHandler {
             }
 
             System.out.println("Input cannot be empty. Please try again.");
+        }
+    }
+
+    public DepartmentEnum readDepartment(String message) {
+        while (true) {
+            String input = readRequiredText(message);
+
+            try {
+                return DepartmentEnum.fromInput(input);
+            } catch (IllegalArgumentException exception) {
+                System.out.println("Invalid department. Use CS, SE, IT, AI, or DS.");
+            }
         }
     }
 

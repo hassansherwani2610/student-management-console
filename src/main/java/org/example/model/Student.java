@@ -1,35 +1,31 @@
 package org.example.model;
 
+import org.example.enums.DepartmentEnum;
 import org.example.exception.ValidationException;
 import java.util.regex.Pattern;
 
 public class Student {
 
-    private Long id;
+    private final Long id;
     private String name;
     private String seatNo;
     private String email;
-    private String department;
+    private DepartmentEnum department;
     private double gpa;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
-    private Student(String name, String seatNo, String email, String department, double gpa) {
-        setName(name);
-        setSeatNo(seatNo);
-        setEmail(email);
-        setDepartment(department);
-        setGpa(gpa);
-    }
-
-    public Student(Long id, String name, String seatNo, String email, String department, double gpa) {
-        this(name, seatNo, email, department, gpa);
-
+    public Student(Long id, String name, String seatNo, String email, DepartmentEnum department, double gpa) {
         if (id == null || id <= 0) {
             throw new ValidationException("Student ID must be greater than zero.");
         }
 
         this.id = id;
+        setName(name);
+        setSeatNo(seatNo);
+        setEmail(email);
+        setDepartment(department);
+        setGpa(gpa);
     }
 
     public Long getId() {
@@ -78,16 +74,16 @@ public class Student {
         this.email = trimmedEmail;
     }
 
-    public String getDepartment() {
+    public DepartmentEnum getDepartment() {
         return department;
     }
 
-    public void setDepartment(String department) {
-        if (department == null || department.isBlank()) {
-            throw new ValidationException("Department cannot be empty.");
+    public void setDepartment(DepartmentEnum department) {
+        if (department == null) {
+            throw new ValidationException("DepartmentEnum cannot be empty.");
         }
 
-        this.department = department.trim();
+        this.department = department;
     }
 
     public double getGpa() {
@@ -117,6 +113,6 @@ public class Student {
 
     @Override
     public String toString() {
-        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | Department: " + department + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
+        return "ID: " + id + " | Name: " + name + " | Seat No: " + seatNo + " | Email: " + email + " | DepartmentEnum: " + department + " | GPA: " + gpa + " | Standing (as per your GPA): " + academicStanding();
     }
 }
