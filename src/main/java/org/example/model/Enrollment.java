@@ -2,9 +2,12 @@ package org.example.model;
 
 import org.example.exception.ValidationException;
 
+import java.util.List;
 import java.util.Locale;
 
 public class Enrollment {
+
+    private static final List<String> VALID_GRADES = List.of( "A", "B","C", "D", "F");
 
     private final Long id;
     private Long studentId;
@@ -74,7 +77,13 @@ public class Enrollment {
             throw new ValidationException("Grade cannot be empty.");
         }
 
-        this.grade = grade.trim().toUpperCase(Locale.ROOT);
+        String formattedGrade = grade.trim().toUpperCase(Locale.ROOT);
+
+        if (!VALID_GRADES.contains(formattedGrade)) {
+            throw new ValidationException("Invalid grade \"" + grade.trim() + "\". Allowed grades: " + String.join(", ", VALID_GRADES) + ".");
+        }
+
+        this.grade = formattedGrade;
     }
 
     @Override

@@ -4,12 +4,7 @@ import org.example.controller.CourseController;
 import org.example.controller.DepartmentController;
 import org.example.controller.EnrollmentController;
 import org.example.controller.StudentController;
-import org.example.exception.DuplicateEnrollmentException;
-import org.example.exception.DuplicateStudentException;
-import org.example.exception.EntityInUseException;
-import org.example.exception.EnrollmentNotFoundException;
-import org.example.exception.StudentNotFoundException;
-import org.example.exception.ValidationException;
+import org.example.exception.*;
 import org.example.model.Course;
 import org.example.model.Department;
 import org.example.model.Enrollment;
@@ -46,17 +41,16 @@ public class ConsoleApplication {
 
                 handleChoice(choice);
 
-            } catch (ValidationException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (DuplicateStudentException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (StudentNotFoundException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (DuplicateEnrollmentException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (EnrollmentNotFoundException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (EntityInUseException exception) {
+            } catch (ValidationException
+                     | StudentNotFoundException
+                     | DuplicateStudentException
+                     | DepartmentNotFoundException
+                     | DuplicateDepartmentException
+                     | CourseNotFoundException
+                     | DuplicateCourseException
+                     | EnrollmentNotFoundException
+                     | DuplicateEnrollmentException
+                     | EntityInUseException exception) {
                 System.out.println("\nError: " + exception.getMessage());
             } catch (Exception exception) {
                 System.out.println("\nUnexpected error: " + exception.getMessage());
