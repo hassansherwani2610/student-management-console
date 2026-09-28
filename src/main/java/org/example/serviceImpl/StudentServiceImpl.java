@@ -1,8 +1,8 @@
 package org.example.serviceImpl;
 
-import org.example.exception.DuplicateStudentException;
-import org.example.exception.EntityInUseException;
-import org.example.exception.StudentNotFoundException;
+import org.example.exception.student.DuplicateStudentException;
+import org.example.exception.common.EntityInUseException;
+import org.example.exception.student.StudentNotFoundException;
 import org.example.model.Enrollment;
 import org.example.model.Student;
 import org.example.repository.CrudRepository;

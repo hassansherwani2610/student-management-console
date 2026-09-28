@@ -1,8 +1,8 @@
 package org.example.serviceImpl;
 
-import org.example.exception.DepartmentNotFoundException;
-import org.example.exception.DuplicateDepartmentException;
-import org.example.exception.EntityInUseException;
+import org.example.exception.department.DepartmentNotFoundException;
+import org.example.exception.department.DuplicateDepartmentException;
+import org.example.exception.common.EntityInUseException;
 import org.example.model.Department;
 import org.example.model.Student;
 import org.example.repository.CrudRepository;

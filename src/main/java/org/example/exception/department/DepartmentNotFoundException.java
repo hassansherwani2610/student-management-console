@@ -1,4 +1,4 @@
-package org.example.exception;
+package org.example.exception.department;
 
 public class DepartmentNotFoundException extends RuntimeException{
 

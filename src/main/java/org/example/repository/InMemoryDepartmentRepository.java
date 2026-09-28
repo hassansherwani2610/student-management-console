@@ -1,7 +1,7 @@
 package org.example.repository;
 
-import org.example.exception.DepartmentNotFoundException;
-import org.example.exception.DuplicateDepartmentException;
+import org.example.exception.department.DepartmentNotFoundException;
+import org.example.exception.department.DuplicateDepartmentException;
 import org.example.model.Department;
 
 import java.util.*;

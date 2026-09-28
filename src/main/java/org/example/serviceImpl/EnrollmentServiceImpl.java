@@ -1,7 +1,7 @@
 package org.example.serviceImpl;
 
-import org.example.exception.DuplicateEnrollmentException;
-import org.example.exception.EnrollmentNotFoundException;
+import org.example.exception.enrollment.DuplicateEnrollmentException;
+import org.example.exception.enrollment.EnrollmentNotFoundException;
 import org.example.model.Enrollment;
 import org.example.repository.CrudRepository;
 import org.example.service.CourseService;

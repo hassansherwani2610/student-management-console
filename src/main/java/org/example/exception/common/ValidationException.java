@@ -1,4 +1,4 @@
-package org.example.exception;
+package org.example.exception.common;
 
 public class ValidationException extends RuntimeException{
 

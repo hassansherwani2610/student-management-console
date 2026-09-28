@@ -1,7 +1,7 @@
 package org.example.repository;
 
-import org.example.exception.DuplicateStudentException;
-import org.example.exception.StudentNotFoundException;
+import org.example.exception.student.DuplicateStudentException;
+import org.example.exception.student.StudentNotFoundException;
 import org.example.model.Student;
 
 import java.util.*;

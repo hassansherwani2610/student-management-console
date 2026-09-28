@@ -1,4 +1,4 @@
-package org.example.exception;
+package org.example.exception.course;
 
 public class DuplicateCourseException extends RuntimeException{
 

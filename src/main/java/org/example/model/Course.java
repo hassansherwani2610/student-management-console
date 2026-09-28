@@ -1,6 +1,6 @@
 package org.example.model;
 
-import org.example.exception.ValidationException;
+import org.example.exception.common.ValidationException;
 
 import java.util.Locale;
 

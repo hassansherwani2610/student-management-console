@@ -1,7 +1,7 @@
 package org.example.repository;
 
-import org.example.exception.CourseNotFoundException;
-import org.example.exception.DuplicateCourseException;
+import org.example.exception.course.CourseNotFoundException;
+import org.example.exception.course.DuplicateCourseException;
 import org.example.model.Course;
 
 import java.util.*;

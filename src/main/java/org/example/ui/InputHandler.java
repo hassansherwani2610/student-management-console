@@ -1,6 +1,6 @@
 package org.example.ui;
 
-import org.example.exception.OperationCancelledException;
+import org.example.exception.common.OperationCancelledException;
 
 import java.util.Locale;
 import java.util.Scanner;
