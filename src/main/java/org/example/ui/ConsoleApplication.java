@@ -2,12 +2,16 @@ package org.example.ui;
 
 import org.example.controller.CourseController;
 import org.example.controller.DepartmentController;
+import org.example.controller.EnrollmentController;
 import org.example.controller.StudentController;
+import org.example.exception.DuplicateEnrollmentException;
 import org.example.exception.DuplicateStudentException;
+import org.example.exception.EnrollmentNotFoundException;
 import org.example.exception.StudentNotFoundException;
 import org.example.exception.ValidationException;
 import org.example.model.Course;
 import org.example.model.Department;
+import org.example.model.Enrollment;
 import org.example.model.Student;
 
 import java.util.List;
@@ -17,13 +21,15 @@ public class ConsoleApplication {
     private final StudentController studentController;
     private final DepartmentController departmentController;
     private final CourseController courseController;
+    private final EnrollmentController enrollmentController;
     private final InputHandler input;
     private boolean running = true;
 
-    public ConsoleApplication(StudentController studentController, DepartmentController departmentController, CourseController courseController, InputHandler input) {
+    public ConsoleApplication(StudentController studentController, DepartmentController departmentController, CourseController courseController, EnrollmentController enrollmentController, InputHandler input) {
         this.studentController = studentController;
         this.departmentController = departmentController;
         this.courseController = courseController;
+        this.enrollmentController = enrollmentController;
         this.input = input;
     }
 
@@ -44,6 +50,10 @@ public class ConsoleApplication {
             } catch (DuplicateStudentException exception) {
                 System.out.println("\nError: " + exception.getMessage());
             } catch (StudentNotFoundException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            } catch (DuplicateEnrollmentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            } catch (EnrollmentNotFoundException exception) {
                 System.out.println("\nError: " + exception.getMessage());
             } catch (Exception exception) {
                 System.out.println("\nUnexpected error: " + exception.getMessage());
@@ -85,9 +95,19 @@ public class ConsoleApplication {
 
             case 14 -> deleteCourse();
 
+            case 15 -> addEnrollment();
+
+            case 16 -> viewAllEnrollments();
+
+            case 17 -> findEnrollmentById();
+
+            case 18 -> updateEnrollment();
+
+            case 19 -> deleteEnrollment();
+
             case 0 -> running = false;
 
-            default -> System.out.println("Invalid menu option. Choose a number from 0 to 14.");
+            default -> System.out.println("Invalid menu option. Choose a number from 0 to 19.");
         }
     }
 
@@ -493,6 +513,117 @@ public class ConsoleApplication {
         }
     }
 
+    private void addEnrollment() {
+
+        System.out.println("\n--- Add Enrollment ---");
+
+        Long id = input.readLong("Enrollment ID: ");
+
+        Long studentId = input.readLong("Student ID: ");
+
+        Long courseId = input.readLong("Course ID: ");
+
+        String semester = input.readRequiredText("Semester: ");
+
+        String grade = input.readRequiredText("Grade: ");
+
+        Enrollment enrollment = enrollmentController.createEnrollment(
+                id,
+                studentId,
+                courseId,
+                semester,
+                grade
+        );
+
+        System.out.println("\nEnrollment created successfully.");
+
+        System.out.println(enrollment);
+    }
+
+    private void viewAllEnrollments() {
+
+        System.out.println("\n--- All Enrollments ---");
+
+        List<Enrollment> enrollments = enrollmentController.getAllEnrollments();
+
+        if (enrollments.isEmpty()) {
+            System.out.println("No enrollments found.");
+
+            return;
+        }
+
+        enrollments.forEach(System.out::println);
+
+        System.out.println("\nTotal: " + enrollments.size());
+    }
+
+    private void findEnrollmentById() {
+
+        System.out.println("\n--- Find Enrollment ---");
+
+        Long id = input.readLong("Enrollment ID: ");
+
+        Enrollment enrollment = enrollmentController.getEnrollmentById(id);
+
+        System.out.println("\nEnrollment found:");
+
+        System.out.println(enrollment);
+    }
+
+    private void updateEnrollment() {
+
+        System.out.println("\n--- Update Enrollment ---");
+
+        Long id = input.readLong("Enrollment ID: ");
+
+        Enrollment current = enrollmentController.getEnrollmentById(id);
+
+        System.out.println("\nCurrent record:");
+
+        System.out.println(current);
+
+        Long studentId = input.readLong("New Student ID: ");
+
+        Long courseId = input.readLong("New Course ID: ");
+
+        String semester = input.readRequiredText("New semester: ");
+
+        String grade = input.readRequiredText("New grade: ");
+
+        Enrollment updated = enrollmentController.updateEnrollment(
+                id,
+                studentId,
+                courseId,
+                semester,
+                grade
+        );
+
+        System.out.println("\nEnrollment updated successfully.");
+
+        System.out.println(updated);
+    }
+
+    private void deleteEnrollment() {
+
+        System.out.println("\n--- Delete Enrollment ---");
+
+        Long id = input.readLong("Enrollment ID: ");
+
+        Enrollment enrollment = enrollmentController.getEnrollmentById(id);
+
+        System.out.println("\nEnrollment to delete:");
+
+        System.out.println(enrollment);
+
+        if (input.readYesNo("Are you sure you want to delete this enrollment?")) {
+            enrollmentController.deleteEnrollment(id);
+
+            System.out.println("Enrollment deleted successfully.");
+        } else {
+            System.out.println("Delete operation cancelled.");
+        }
+    }
+
     private String getDepartmentName(Student student) {
         return departmentController.getDepartmentById(student.getDepartment()).getName();
     }
@@ -540,6 +671,11 @@ public class ConsoleApplication {
                 12. View All Courses
                 13. Update Course
                 14. Delete Course
+                15. Add Enrollment
+                16. View All Enrollments
+                17. Find Enrollment By ID
+                18. Update Enrollment
+                19. Delete Enrollment
                 0. Exit
                 ----------------------------------------
                 """);
