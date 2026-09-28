@@ -28,24 +28,26 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        // For Department
+        // All entities Repositories
         CrudRepository<Department, Long> departmentRepository = new InMemoryDepartmentRepository();
-        DepartmentService departmentService = new DepartmentServiceImpl(departmentRepository);
+        CrudRepository<Course, Long> courseRepository = new InMemoryCourseRepository();
+        CrudRepository<Student, Long> studentRepository = new InMemoryStudentRepository();
+        CrudRepository<Enrollment, Long> enrollmentRepository = new InMemoryEnrollmentRepository();
+
+        // For Department
+        DepartmentService departmentService = new DepartmentServiceImpl(departmentRepository, studentRepository);
         DepartmentController departmentController = new DepartmentController(departmentService);
 
         // For Course
-        CrudRepository<Course, Long> courseRepository = new InMemoryCourseRepository();
-        CourseService courseService = new CourseServiceImpl(courseRepository);
+        CourseService courseService = new CourseServiceImpl(courseRepository, enrollmentRepository);
         CourseController courseController = new CourseController(courseService);
 
         // For Student
-        CrudRepository<Student, Long> studentRepository = new InMemoryStudentRepository();
-        StudentService studentService = new StudentServiceImpl(studentRepository, departmentService);
+        StudentService studentService = new StudentServiceImpl(studentRepository, enrollmentRepository, departmentService);
         StudentController studentController = new StudentController(studentService);
 
         // For Enrollment
-        CrudRepository<Enrollment, Long> enrollmentRepository = new InMemoryEnrollmentRepository();
-        EnrollmentService enrollmentService = new EnrollmentServiceImpl(enrollmentRepository);
+        EnrollmentService enrollmentService = new EnrollmentServiceImpl(enrollmentRepository, studentService, courseService);
         EnrollmentController enrollmentController = new EnrollmentController(enrollmentService);
 
         InputHandler input = new InputHandler(new Scanner(System.in));

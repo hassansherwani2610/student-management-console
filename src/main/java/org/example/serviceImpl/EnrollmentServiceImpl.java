@@ -4,21 +4,27 @@ import org.example.exception.DuplicateEnrollmentException;
 import org.example.exception.EnrollmentNotFoundException;
 import org.example.model.Enrollment;
 import org.example.repository.CrudRepository;
+import org.example.service.CourseService;
 import org.example.service.EnrollmentService;
+import org.example.service.StudentService;
 
 import java.util.List;
 import java.util.Objects;
 
 public class EnrollmentServiceImpl implements EnrollmentService {
 
-    private final CrudRepository<Enrollment, Long> repository;
+    private final CrudRepository<Enrollment, Long> enrollmentRepository;
+    private final StudentService studentService;
+    private final CourseService courseService;
 
-    public EnrollmentServiceImpl(CrudRepository<Enrollment, Long> repository) {
-        this.repository = repository;
+    public EnrollmentServiceImpl(CrudRepository<Enrollment, Long> enrollmentRepository, StudentService studentService, CourseService courseService) {
+        this.enrollmentRepository = enrollmentRepository;
+        this.studentService = studentService;
+        this.courseService = courseService;
     }
 
     private boolean enrollmentExists(Long studentId, Long courseId, String semester, Long id) {
-        return repository
+        return enrollmentRepository
                 .findAll()
                 .stream()
                 .anyMatch(enrollment ->
@@ -31,50 +37,53 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     public Enrollment createEnrollment(Long id, Long studentId, Long courseId, String semester, String grade) {
-        if (repository.existsById(id)) {
+        if (enrollmentRepository.existsById(id)) {
             throw new DuplicateEnrollmentException("An enrollment with ID " + id + " already exists.");
         }
+
+        studentService.getStudentById(studentId);
+        courseService.getCourseById(courseId);
 
         if (enrollmentExists(studentId, courseId, semester, null)) {
             throw new DuplicateEnrollmentException("This student is already enrolled in this course for this semester.");
         }
 
-        Enrollment enrollment = repository.save(new Enrollment(id, studentId, courseId, semester, grade));
+        Enrollment enrollment = enrollmentRepository.save(new Enrollment(id, studentId, courseId, semester, grade));
 
         return enrollment;
     }
 
     @Override
     public List<Enrollment> getAllEnrollments() {
-        return repository.findAll();
+        return enrollmentRepository.findAll();
     }
 
     @Override
     public Enrollment getEnrollmentById(Long id) {
-        return repository
+        return enrollmentRepository
                 .findById(id)
                 .orElseThrow(() -> new EnrollmentNotFoundException("Enrollment with ID " + id + " was not found."));
     }
 
     @Override
     public Enrollment updateEnrollment(Long id, Long studentId, Long courseId, String semester, String grade) {
-        Enrollment enrollment = getEnrollmentById(id);
+        getEnrollmentById(id);
 
-        if (enrollmentExists(studentId, courseId, semester, id)) {
+        Enrollment updated = new Enrollment(id, studentId, courseId, semester, grade);
+
+        studentService.getStudentById(studentId);
+        courseService.getCourseById(courseId);
+
+        if (enrollmentExists(studentId, courseId, updated.getSemester(), id)) {
             throw new DuplicateEnrollmentException("This student is already enrolled in this course for this semester.");
         }
 
-        enrollment.setStudentId(studentId);
-        enrollment.setCourseId(courseId);
-        enrollment.setSemester(semester);
-        enrollment.setGrade(grade);
-
-        return repository.update(enrollment);
+        return enrollmentRepository.update(updated);
     }
 
     @Override
     public void deleteEnrollment(Long id) {
         getEnrollmentById(id);
-        repository.deleteById(id);
+        enrollmentRepository.deleteById(id);
     }
 }

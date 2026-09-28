@@ -1,7 +1,9 @@
 package org.example.serviceImpl;
 
 import org.example.exception.DuplicateStudentException;
+import org.example.exception.EntityInUseException;
 import org.example.exception.StudentNotFoundException;
+import org.example.model.Enrollment;
 import org.example.model.Student;
 import org.example.repository.CrudRepository;
 import org.example.service.DepartmentService;
@@ -12,18 +14,20 @@ import java.util.Locale;
 import java.util.Objects;
 
 public class StudentServiceImpl implements StudentService {
-    private final CrudRepository<Student, Long> repository;
+    private final CrudRepository<Student, Long> studentRepository;
+    private final CrudRepository<Enrollment, Long> enrollmentRepository;
     private final DepartmentService departmentService;
 
-    public StudentServiceImpl(CrudRepository<Student, Long> repository, DepartmentService departmentService) {
-        this.repository = repository;
+    public StudentServiceImpl(CrudRepository<Student, Long> studentRepository, CrudRepository<Enrollment, Long> enrollmentRepository, DepartmentService departmentService) {
+        this.studentRepository = studentRepository;
+        this.enrollmentRepository = enrollmentRepository;
         this.departmentService = departmentService;
     }
 
     private boolean emailExists(String email, Long id) {
         String formattedEmail = email.trim();
 
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .anyMatch(student -> student.getEmail().equalsIgnoreCase(formattedEmail) && !Objects.equals(student.getId(), id));
@@ -32,7 +36,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public Student createStudent(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
-        if (repository.existsById(id)) {
+        if (studentRepository.existsById(id)) {
             throw new DuplicateStudentException("A student with ID " + id + " already exists in our system.");
         }
 
@@ -42,19 +46,19 @@ public class StudentServiceImpl implements StudentService {
 
         departmentService.getDepartmentById(departmentId);
 
-        Student student = repository.save(new Student(id, name, seatNo, email, departmentId, gpa));
+        Student student = studentRepository.save(new Student(id, name, seatNo, email, departmentId, gpa));
 
         return student;
     }
 
     @Override
     public List<Student> getAllStudents() {
-        return repository.findAll();
+        return studentRepository.findAll();
     }
 
     @Override
     public Student getStudentById(Long id) {
-        return repository
+        return studentRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new StudentNotFoundException("Student with ID " + id + " was not found in our system.")
@@ -65,7 +69,7 @@ public class StudentServiceImpl implements StudentService {
     public Student updateName(Long id, String newName) {
         Student student = getStudentById(id);
         student.setName(newName);
-        return repository.save(student);
+        return studentRepository.save(student);
     }
 
     @Override
@@ -77,7 +81,7 @@ public class StudentServiceImpl implements StudentService {
         }
 
         student.setEmail(email);
-        return repository.update(student);
+        return studentRepository.update(student);
     }
 
     @Override
@@ -87,54 +91,59 @@ public class StudentServiceImpl implements StudentService {
         departmentService.getDepartmentById(departmentId);
 
         student.setDepartment(departmentId);
-        return repository.update(student);
+        return studentRepository.update(student);
     }
 
     @Override
     public Student updateGpa(Long id, double gpa) {
         Student student = getStudentById(id);
         student.setGpa(gpa);
-        return repository.update(student);
+        return studentRepository.update(student);
     }
 
     @Override
     public Student updateSeatNo(Long id, String seatNo) {
         Student student = getStudentById(id);
         student.setSeatNo(seatNo);
-        return repository.update(student);
+        return studentRepository.update(student);
     }
 
     @Override
     public Student updateAll(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
-        Student student = getStudentById(id);
+        getStudentById(id);
 
-        if (emailExists(email, id)) {
+        Student updated = new Student(id, name, seatNo, email, departmentId, gpa);
+
+        if (emailExists(updated.getEmail(), id)) {
             throw new DuplicateStudentException("A student with email " + email + " already exists in our system.");
         }
 
-        student.setName(name);
-        student.setSeatNo(seatNo);
-        student.setEmail(email);
-
         departmentService.getDepartmentById(departmentId);
 
-        student.setDepartment(departmentId);
-        student.setGpa(gpa);
-
-        return repository.update(student);
+        return studentRepository.update(updated);
     }
 
     @Override
     public void deleteStudentById(Long id) {
         getStudentById(id);
-        repository.deleteById(id);
+
+        boolean hasEnrollments = enrollmentRepository
+                .findAll()
+                .stream()
+                .anyMatch(enrollment -> enrollment.getStudentId().equals(id));
+
+        if (hasEnrollments) {
+            throw new EntityInUseException("Student with ID " + id + " cannot be deleted because they still have enrollments. Delete those enrollments first.");
+        }
+
+        studentRepository.deleteById(id);
     }
 
     @Override
     public List<Student> searchByName(String keyword) {
         String formattedKeyword = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
 
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .filter(student -> student.getName().toLowerCase(Locale.ROOT).contains(formattedKeyword))
@@ -146,7 +155,7 @@ public class StudentServiceImpl implements StudentService {
     public List<Student> filterByDepartment(Long departmentId) {
         departmentService.getDepartmentById(departmentId);
 
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .filter(student -> student.getDepartment().equals(departmentId))
@@ -156,7 +165,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<Student> filterByGpa(double min, double max) {
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .filter(student -> student.getGpa() >= min && student.getGpa() <= max)
@@ -166,7 +175,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<Student> sortByName() {
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .sorted((student1, student2) -> student1.getName().compareToIgnoreCase(student2.getName()))
@@ -175,7 +184,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<Student> sortById() {
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .sorted((student1, student2) -> student1.getId().compareTo(student2.getId()))
@@ -184,7 +193,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<Student> sortByGpaDescending() {
-        return repository
+        return studentRepository
                 .findAll()
                 .stream()
                 .sorted((student1, student2) -> Double.compare(student2.getGpa(), student1.getGpa()))

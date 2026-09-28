@@ -2,7 +2,9 @@ package org.example.serviceImpl;
 
 import org.example.exception.CourseNotFoundException;
 import org.example.exception.DuplicateCourseException;
+import org.example.exception.EntityInUseException;
 import org.example.model.Course;
+import org.example.model.Enrollment;
 import org.example.repository.CrudRepository;
 import org.example.service.CourseService;
 
@@ -10,16 +12,18 @@ import java.util.List;
 import java.util.Objects;
 
 public class CourseServiceImpl implements CourseService {
-    private final CrudRepository<Course, Long> repository;
+    private final CrudRepository<Course, Long> courseRepository;
+    private final CrudRepository<Enrollment, Long> enrollmentRepository;
 
-    public CourseServiceImpl(CrudRepository<Course, Long> repository) {
-        this.repository = repository;
+    public CourseServiceImpl(CrudRepository<Course, Long> courseRepository, CrudRepository<Enrollment, Long> enrollmentRepository) {
+        this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     private boolean courseCodeExists(String code, Long id) {
         String formattedCode = code.trim();
 
-        return repository
+        return courseRepository
                 .findAll()
                 .stream()
                 .anyMatch(course -> course.getCode().equalsIgnoreCase(formattedCode) && !Objects.equals(course.getId(), id));
@@ -27,7 +31,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Course createCourse(Long id, String name, String code, int creditHours) {
-        if (repository.existsById(id)) {
+        if (courseRepository.existsById(id)) {
             throw new DuplicateCourseException("A course with ID " + id + " already exists in our system.");
         }
 
@@ -35,39 +39,47 @@ public class CourseServiceImpl implements CourseService {
             throw new DuplicateCourseException("A course with code " + code + " already exists in our system.");
         }
 
-        return repository.save(new Course(id, name, code, creditHours));
+        return courseRepository.save(new Course(id, name, code, creditHours));
     }
 
     @Override
     public List<Course> getAllCourses() {
-        return repository.findAll();
+        return courseRepository.findAll();
     }
 
     @Override
     public Course getCourseById(Long id) {
-        return repository
+        return courseRepository
                 .findById(id)
                 .orElseThrow(() -> new CourseNotFoundException("Course with ID " + id + " was not found in our system."));
     }
 
     @Override
     public Course updateCourse(Long id, String name, String code, int creditHours) {
-        Course course = getCourseById(id);
+        getCourseById(id);
 
-        if (courseCodeExists(code, id)) {
-            throw new DuplicateCourseException("A course with code " + code + " already exists in our sustem.");
+        Course updated = new Course(id, name, code, creditHours);
+
+        if (courseCodeExists(updated.getCode(), id)) {
+            throw new DuplicateCourseException("A course with code " + code + " already exists in our system.");
         }
 
-        course.setName(name);
-        course.setCode(code);
-        course.setCreditHours(creditHours);
-
-        return repository.update(course);
+        return courseRepository.update(updated);
     }
 
     @Override
     public void deleteCourse(Long id) {
         getCourseById(id);
-        repository.deleteById(id);
+
+        boolean hasEnrollments = enrollmentRepository
+                .findAll()
+                .stream()
+                .anyMatch(enrollment -> enrollment.getCourseId().equals(id));
+
+        if (hasEnrollments) {
+            throw new EntityInUseException("Course with ID " + id + " cannot be deleted because students are still enrolled in it. Delete those enrollments first.");
+        }
+
+        courseRepository.deleteById(id);
     }
 }

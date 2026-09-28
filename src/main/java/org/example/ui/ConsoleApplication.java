@@ -6,6 +6,7 @@ import org.example.controller.EnrollmentController;
 import org.example.controller.StudentController;
 import org.example.exception.DuplicateEnrollmentException;
 import org.example.exception.DuplicateStudentException;
+import org.example.exception.EntityInUseException;
 import org.example.exception.EnrollmentNotFoundException;
 import org.example.exception.StudentNotFoundException;
 import org.example.exception.ValidationException;
@@ -54,6 +55,8 @@ public class ConsoleApplication {
             } catch (DuplicateEnrollmentException exception) {
                 System.out.println("\nError: " + exception.getMessage());
             } catch (EnrollmentNotFoundException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            } catch (EntityInUseException exception) {
                 System.out.println("\nError: " + exception.getMessage());
             } catch (Exception exception) {
                 System.out.println("\nUnexpected error: " + exception.getMessage());
