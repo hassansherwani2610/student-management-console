@@ -147,7 +147,11 @@ public class ConsoleApplication {
 
         departments.forEach(System.out::println);
 
-        return input.readLong("Department ID: ");
+        Long departmentId = input.readLong("Department ID: ");
+
+        departmentController.getDepartmentById(departmentId);
+
+        return departmentId;
     }
 
     private void viewAllStudents() {
@@ -521,7 +525,11 @@ public class ConsoleApplication {
 
         Long studentId = input.readLong("Student ID: ");
 
+        studentController.getStudentById(studentId);
+
         Long courseId = input.readLong("Course ID: ");
+
+        courseController.getCourseById(courseId);
 
         String semester = input.readRequiredText("Semester: ");
 
@@ -584,7 +592,11 @@ public class ConsoleApplication {
 
         Long studentId = input.readLong("New Student ID: ");
 
+        studentController.getStudentById(studentId);
+
         Long courseId = input.readLong("New Course ID: ");
+
+        courseController.getCourseById(courseId);
 
         String semester = input.readRequiredText("New semester: ");
 
