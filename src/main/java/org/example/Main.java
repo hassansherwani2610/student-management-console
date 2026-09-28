@@ -2,19 +2,24 @@ package org.example;
 
 import org.example.controller.CourseController;
 import org.example.controller.DepartmentController;
+import org.example.controller.EnrollmentController;
 import org.example.controller.StudentController;
 import org.example.model.Course;
 import org.example.model.Department;
+import org.example.model.Enrollment;
 import org.example.model.Student;
 import org.example.repository.CrudRepository;
 import org.example.repository.InMemoryCourseRepository;
 import org.example.repository.InMemoryDepartmentRepository;
+import org.example.repository.InMemoryEnrollmentRepository;
 import org.example.repository.InMemoryStudentRepository;
 import org.example.service.CourseService;
 import org.example.service.DepartmentService;
+import org.example.service.EnrollmentService;
 import org.example.service.StudentService;
 import org.example.serviceImpl.CourseServiceImpl;
 import org.example.serviceImpl.DepartmentServiceImpl;
+import org.example.serviceImpl.EnrollmentServiceImpl;
 import org.example.serviceImpl.StudentServiceImpl;
 import org.example.ui.ConsoleApplication;
 import org.example.ui.InputHandler;
@@ -38,10 +43,14 @@ public class Main {
         StudentService studentService = new StudentServiceImpl(studentRepository, departmentService);
         StudentController studentController = new StudentController(studentService);
 
+        // For Enrollment
+        CrudRepository<Enrollment, Long> enrollmentRepository = new InMemoryEnrollmentRepository();
+        EnrollmentService enrollmentService = new EnrollmentServiceImpl(enrollmentRepository);
+        EnrollmentController enrollmentController = new EnrollmentController(enrollmentService);
 
         InputHandler input = new InputHandler(new Scanner(System.in));
 
-        ConsoleApplication application = new ConsoleApplication(studentController, departmentController, courseController, input);
+        ConsoleApplication application = new ConsoleApplication(studentController, departmentController, courseController, enrollmentController, input);
 
         application.start();
     }
