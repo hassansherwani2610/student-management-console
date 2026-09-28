@@ -11,6 +11,7 @@ import org.example.model.Enrollment;
 import org.example.model.Student;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 public class ConsoleApplication {
 
@@ -31,124 +32,377 @@ public class ConsoleApplication {
 
     public void start() {
 
+        seedDefaults();
         printWelcome();
 
         while (running) {
             try {
-                printMenu();
+                printMainMenu();
 
-                int choice = input.readInt("Choose an option: ");
+                int choice = input.readMenuChoice("Choose an option: ");
 
-                handleChoice(choice);
+                switch (choice) {
+                    case 1 -> studentMenu();
+                    case 2 -> departmentMenu();
+                    case 3 -> courseMenu();
+                    case 4 -> enrollmentMenu();
+                    case 0 -> running = false;
+                    default -> System.out.println("\nPlease choose a number from 0 to 4.");
+                }
 
-            } catch (ValidationException
-                     | StudentNotFoundException
-                     | DuplicateStudentException
-                     | DepartmentNotFoundException
-                     | DuplicateDepartmentException
-                     | CourseNotFoundException
-                     | DuplicateCourseException
-                     | EnrollmentNotFoundException
-                     | DuplicateEnrollmentException
-                     | EntityInUseException exception) {
-                System.out.println("\nError: " + exception.getMessage());
-            } catch (Exception exception) {
-                System.out.println("\nUnexpected error: " + exception.getMessage());
+            } catch (RuntimeException exception) {
+                reportError(exception);
             }
         }
 
-        System.out.println("\nThank you for using Student Management System.");
+        System.out.println("\nThank you for using Student Management System. Goodbye!");
     }
 
-    private void handleChoice(int choice) {
-
-        switch (choice) {
-
-            case 1 -> addStudent();
-
-            case 2 -> viewAllStudents();
-
-            case 3 -> findStudentById();
-
-            case 4 -> updateStudent();
-
-            case 5 -> deleteStudent();
-
-            case 6 -> searchStudents();
-
-            case 7 -> addDepartment();
-
-            case 8 -> viewAllDepartments();
-
-            case 9 -> updateDepartment();
-
-            case 10 -> deleteDepartment();
-
-            case 11 -> addCourse();
-
-            case 12 -> viewAllCourses();
-
-            case 13 -> updateCourse();
-
-            case 14 -> deleteCourse();
-
-            case 15 -> addEnrollment();
-
-            case 16 -> viewAllEnrollments();
-
-            case 17 -> findEnrollmentById();
-
-            case 18 -> updateEnrollment();
-
-            case 19 -> deleteEnrollment();
-
-            case 0 -> running = false;
-
-            default -> System.out.println("Invalid menu option. Choose a number from 0 to 19.");
+    private void safely(Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException exception) {
+            reportError(exception);
         }
     }
 
-    private void addStudent() {
+    private void reportError(RuntimeException exception) {
 
-        System.out.println("\n--- Add Student ---");
+        if (exception instanceof EntityInUseException) {
+            System.out.println("\nCannot delete: " + exception.getMessage());
+            System.out.println("Tip: remove the related records first, then try again.");
+        } else if (exception instanceof ValidationException
+                || exception instanceof StudentNotFoundException
+                || exception instanceof DuplicateStudentException
+                || exception instanceof DepartmentNotFoundException
+                || exception instanceof DuplicateDepartmentException
+                || exception instanceof CourseNotFoundException
+                || exception instanceof DuplicateCourseException
+                || exception instanceof EnrollmentNotFoundException
+                || exception instanceof DuplicateEnrollmentException) {
+            System.out.println("\nError: " + exception.getMessage());
+        } else {
+            System.out.println("\nUnexpected error: " + exception.getMessage());
+        }
+    }
 
-        Long id = input.readLong("Student ID: ");
+    private void seedDefaults() {
 
-        String name = input.readRequiredText("Name: ");
+        if (departmentController.getAllDepartments().isEmpty()) {
+            List<String> names = List.of(
+                    "Computer Science",
+                    "Software Engineering",
+                    "Electrical Engineering",
+                    "Business Administration",
+                    "Mathematics");
 
-        String seatNo = input.readRequiredText("Seat Number: ");
+            long id = 1;
+            for (String name : names) {
+                try {
+                    departmentController.createDepartment(id++, name);
+                } catch (RuntimeException ignored) {
+                }
+            }
+        }
 
-        String email = input.readRequiredText("Email: ");
+        if (courseController.getAllCourses().isEmpty()) {
+            seedCourse(1L, "Programming Fundamentals", "CS101", 3);
+            seedCourse(2L, "Data Structures", "CS201", 3);
+            seedCourse(3L, "Database Systems", "CS301", 3);
+            seedCourse(4L, "Calculus I", "MT101", 3);
+        }
+    }
 
-        Long departmentId = selectDepartment();
+    private void seedCourse(Long id, String name, String code, int creditHours) {
+        try {
+            courseController.createCourse(id, name, code, creditHours);
+        } catch (RuntimeException ignored) {
+        }
+    }
 
-        double gpa = input.readDouble("\nGPA (0.0 - 4.0): ");
+    private void studentMenu() {
 
-        Student student = studentController.createStudent(id, name, seatNo, email, departmentId, gpa);
+        boolean back = false;
 
-        System.out.println("\nStudent created successfully.");
+        while (!back) {
+            System.out.println("""
+                    
+                    ------------- STUDENTS -------------
+                    1. Register a new student
+                    2. View all students
+                    3. Find a student
+                    4. Update a student
+                    5. Delete a student
+                    6. Search / filter / sort
+                    0. Back to main menu
+                    ------------------------------------
+                    """);
 
-        System.out.println(student.toString(getDepartmentName(student)));
+            int choice = input.readMenuChoice("Choose an option: ");
+
+            switch (choice) {
+                case 1 -> safely(this::addStudent);
+                case 2 -> safely(this::viewAllStudents);
+                case 3 -> safely(this::findStudent);
+                case 4 -> safely(this::updateStudent);
+                case 5 -> safely(this::deleteStudent);
+                case 6 -> safely(this::searchStudents);
+                case 0 -> back = true;
+                default -> System.out.println("\nPlease choose a number from 0 to 6.");
+            }
+        }
+    }
+
+    private void departmentMenu() {
+
+        boolean back = false;
+
+        while (!back) {
+            System.out.println("""
+                    
+                    ----------- DEPARTMENTS ------------
+                    1. Add a department
+                    2. View all departments
+                    3. Rename a department
+                    4. Delete a department
+                    0. Back to main menu
+                    ------------------------------------
+                    """);
+
+            int choice = input.readMenuChoice("Choose an option: ");
+
+            switch (choice) {
+                case 1 -> safely(this::addDepartment);
+                case 2 -> safely(this::viewAllDepartments);
+                case 3 -> safely(this::updateDepartment);
+                case 4 -> safely(this::deleteDepartment);
+                case 0 -> back = true;
+                default -> System.out.println("\nPlease choose a number from 0 to 4.");
+            }
+        }
+    }
+
+    private void courseMenu() {
+
+        boolean back = false;
+
+        while (!back) {
+            System.out.println("""
+                    
+                    -------------- COURSES -------------
+                    1. Add a course
+                    2. View all courses
+                    3. Update a course
+                    4. Delete a course
+                    0. Back to main menu
+                    ------------------------------------
+                    """);
+
+            int choice = input.readMenuChoice("Choose an option: ");
+
+            switch (choice) {
+                case 1 -> safely(this::addCourse);
+                case 2 -> safely(this::viewAllCourses);
+                case 3 -> safely(this::updateCourse);
+                case 4 -> safely(this::deleteCourse);
+                case 0 -> back = true;
+                default -> System.out.println("\nPlease choose a number from 0 to 4.");
+            }
+        }
+    }
+
+    private void enrollmentMenu() {
+
+        boolean back = false;
+
+        while (!back) {
+            System.out.println("""
+                    
+                    ------------ ENROLLMENTS -----------
+                    1. Enroll a student in a course
+                    2. View all enrollments
+                    3. Update an enrollment
+                    4. Delete an enrollment
+                    0. Back to main menu
+                    ------------------------------------
+                    """);
+
+            int choice = input.readMenuChoice("Choose an option: ");
+
+            switch (choice) {
+                case 1 -> safely(this::addEnrollment);
+                case 2 -> safely(this::viewAllEnrollments);
+                case 3 -> safely(this::updateEnrollment);
+                case 4 -> safely(this::deleteEnrollment);
+                case 0 -> back = true;
+                default -> System.out.println("\nPlease choose a number from 0 to 4.");
+            }
+        }
     }
 
     private Long selectDepartment() {
 
-        List<Department> departments =
-                departmentController.getAllDepartments();
+        while (true) {
+            List<Department> departments = departmentController.getAllDepartments();
 
-        if (departments.isEmpty()) {
-            throw new ValidationException("No departments available. Please add a department first.");
+            System.out.println("\nSelect a department:");
+
+            if (departments.isEmpty()) {
+                System.out.println("  (no departments yet)");
+            }
+
+            for (int i = 0; i < departments.size(); i++) {
+                System.out.println("  " + (i + 1) + ". " + departments.get(i).getName());
+            }
+
+            System.out.println("  0. + Add a new department");
+
+            int choice = input.readInt("Your choice: ");
+
+            if (choice == 0) {
+                Department created = addDepartment();
+                if (created != null) {
+                    return created.getId();
+                }
+            } else if (choice >= 1 && choice <= departments.size()) {
+                return departments.get(choice - 1).getId();
+            } else {
+                System.out.println("Please choose a number from 0 to " + departments.size() + ".");
+            }
+        }
+    }
+
+    private Long selectStudent(boolean allowAdd) {
+
+        while (true) {
+            List<Student> students = studentController.sortById();
+
+            if (students.isEmpty() && !allowAdd) {
+                throw new ValidationException("There are no students yet. Register a student first.");
+            }
+
+            System.out.println("\nSelect a student:");
+
+            if (students.isEmpty()) {
+                System.out.println("  (no students yet)");
+            }
+
+            for (int i = 0; i < students.size(); i++) {
+                Student s = students.get(i);
+                System.out.println("  " + (i + 1) + ". " + s.getName() + "  [ID " + s.getId() + "]");
+            }
+
+            if (allowAdd) {
+                System.out.println("  0. + Register a new student");
+            }
+
+            int choice = input.readInt("Your choice: ");
+
+            if (allowAdd && choice == 0) {
+                Student created = addStudent();
+                if (created != null) {
+                    return created.getId();
+                }
+            } else if (choice >= 1 && choice <= students.size()) {
+                return students.get(choice - 1).getId();
+            } else {
+                System.out.println("Please choose a valid number from the list.");
+            }
+        }
+    }
+
+    private Long selectCourse(boolean allowAdd) {
+
+        while (true) {
+            List<Course> courses = courseController.getAllCourses();
+
+            if (courses.isEmpty() && !allowAdd) {
+                throw new ValidationException("There are no courses yet. Add a course first.");
+            }
+
+            System.out.println("\nSelect a course:");
+
+            if (courses.isEmpty()) {
+                System.out.println("  (no courses yet)");
+            }
+
+            for (int i = 0; i < courses.size(); i++) {
+                Course c = courses.get(i);
+                System.out.println("  " + (i + 1) + ". " + c.getCode() + " - " + c.getName());
+            }
+
+            if (allowAdd) {
+                System.out.println("  0. + Add a new course");
+            }
+
+            int choice = input.readInt("Your choice: ");
+
+            if (allowAdd && choice == 0) {
+                Course created = addCourse();
+                if (created != null) {
+                    return created.getId();
+                }
+            } else if (choice >= 1 && choice <= courses.size()) {
+                return courses.get(choice - 1).getId();
+            } else {
+                System.out.println("Please choose a valid number from the list.");
+            }
+        }
+    }
+
+    private Long selectEnrollment() {
+
+        List<Enrollment> enrollments = enrollmentController.getAllEnrollments();
+
+        if (enrollments.isEmpty()) {
+            throw new ValidationException("There are no enrollments yet.");
         }
 
-        System.out.println("\nAvailable Departments:");
+        while (true) {
+            System.out.println("\nSelect an enrollment:");
 
-        departments.forEach(System.out::println);
+            for (int i = 0; i < enrollments.size(); i++) {
+                System.out.println("  " + (i + 1) + ". " + describe(enrollments.get(i)));
+            }
 
-        Long departmentId = input.readLong("Department ID: ");
+            int choice = input.readInt("Your choice: ");
 
-        departmentController.getDepartmentById(departmentId);
+            if (choice >= 1 && choice <= enrollments.size()) {
+                return enrollments.get(choice - 1).getId();
+            }
 
-        return departmentId;
+            System.out.println("Please choose a number from 1 to " + enrollments.size() + ".");
+        }
+    }
+
+    private Student addStudent() {
+
+        System.out.println("\n--- Register Student ---");
+        System.out.println("Fill in the details below. A student ID is generated automatically.");
+
+        while (true) {
+            String name = input.readRequiredText("Full name: ");
+            String seatNo = input.readRequiredText("Seat number: ");
+            String email = input.readRequiredText("Email: ");
+            Long departmentId = selectDepartment();
+            double gpa = input.readDouble("\nGPA (0.0 - 4.0): ");
+
+            try {
+                Student student = studentController.createStudent(nextStudentId(), name, seatNo, email, departmentId, gpa);
+
+                System.out.println("\nStudent registered successfully.");
+                System.out.println(student.toString(getDepartmentName(student)));
+
+                return student;
+
+            } catch (ValidationException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+
+                if (!input.readYesNo("Re-enter the details?")) {
+                    return null;
+                }
+            }
+        }
     }
 
     private void viewAllStudents() {
@@ -158,7 +412,7 @@ public class ConsoleApplication {
         List<Student> students = studentController.sortById();
 
         if (students.isEmpty()) {
-            System.out.println("No students found.");
+            System.out.println("No students yet. Choose \"Register a new student\" to add the first one.");
             return;
         }
 
@@ -167,16 +421,15 @@ public class ConsoleApplication {
         System.out.println("\nTotal: " + students.size());
     }
 
-    private void findStudentById() {
+    private void findStudent() {
 
         System.out.println("\n--- Find Student ---");
 
-        Long id = input.readLong("Student ID: ");
+        Long id = selectStudent(false);
 
         Student student = studentController.getStudentById(id);
 
         System.out.println("\nStudent found:");
-
         System.out.println(student.toString(getDepartmentName(student)));
     }
 
@@ -184,23 +437,23 @@ public class ConsoleApplication {
 
         System.out.println("\n--- Update Student ---");
 
-        Long id = input.readLong("Student ID: ");
+        Long id = selectStudent(false);
 
         Student current = studentController.getStudentById(id);
 
         System.out.println("\nCurrent record:");
-
         System.out.println(current.toString(getDepartmentName(current)));
 
         System.out.println("""
                 
-                Select field to update:
+                What would you like to update?
                 1. Name
                 2. Email
                 3. Department
                 4. GPA
-                5. Seat Number
-                6. All fields
+                5. Seat number
+                6. Everything
+                0. Cancel
                 """);
 
         int choice = input.readInt("Choose field: ");
@@ -209,59 +462,38 @@ public class ConsoleApplication {
 
         switch (choice) {
 
-            case 1 -> {
-                String name = input.readRequiredText("New name: ");
+            case 1 -> updated = studentController.updateName(id, input.readRequiredText("New name: "));
 
-                updated = studentController.updateName(id, name);
-            }
+            case 2 -> updated = studentController.updateEmail(id, input.readRequiredText("New email: "));
 
-            case 2 -> {
-                String email = input.readRequiredText("New email: ");
+            case 3 -> updated = studentController.updateDepartment(id, selectDepartment());
 
-                updated = studentController.updateEmail(id, email);
-            }
+            case 4 -> updated = studentController.updateGpa(id, input.readDouble("New GPA (0.0 - 4.0): "));
 
-            case 3 -> {
-                Long departmentId = selectDepartment();
-
-                updated = studentController.updateDepartment(id, departmentId);
-            }
-
-            case 4 -> {
-                double gpa = input.readDouble("New GPA (0.0 - 4.0): ");
-
-                updated = studentController.updateGpa(id, gpa);
-            }
-
-            case 5 -> {
-                String seatNo = input.readRequiredText("New seat number: ");
-
-                updated = studentController.updateSeatNo(id, seatNo);
-            }
+            case 5 -> updated = studentController.updateSeatNo(id, input.readRequiredText("New seat number: "));
 
             case 6 -> {
                 String name = input.readRequiredText("New name: ");
-
                 String seatNo = input.readRequiredText("New seat number: ");
-
                 String email = input.readRequiredText("New email: ");
-
                 Long departmentId = selectDepartment();
-
                 double gpa = input.readDouble("New GPA (0.0 - 4.0): ");
 
                 updated = studentController.updateAll(id, name, seatNo, email, departmentId, gpa);
             }
 
-            default -> {
-                System.out.println("Invalid update option. Choose 1 to 6.");
+            case 0 -> {
+                System.out.println("Update cancelled.");
+                return;
+            }
 
+            default -> {
+                System.out.println("Please choose a number from 0 to 6.");
                 return;
             }
         }
 
         System.out.println("\nStudent updated successfully.");
-
         System.out.println(updated.toString(getDepartmentName(updated)));
     }
 
@@ -269,23 +501,18 @@ public class ConsoleApplication {
 
         System.out.println("\n--- Delete Student ---");
 
-        Long id = input.readLong("Student ID: ");
+        Long id = selectStudent(false);
 
         Student student = studentController.getStudentById(id);
 
         System.out.println("\nStudent to delete:");
-
         System.out.println(student.toString(getDepartmentName(student)));
 
         if (input.readYesNo("Are you sure you want to delete this student?")) {
-
             studentController.deleteStudent(id);
-
             System.out.println("Student deleted successfully.");
-
         } else {
-
-            System.out.println("Delete operation cancelled.");
+            System.out.println("Delete cancelled.");
         }
     }
 
@@ -300,34 +527,25 @@ public class ConsoleApplication {
                 4. Sort by name
                 5. Sort by GPA (highest first)
                 6. Sort by ID
+                0. Cancel
                 """);
 
-        int choice = input.readInt("Choose search option: ");
+        int choice = input.readInt("Choose an option: ");
 
         List<Student> results;
 
         switch (choice) {
 
-            case 1 -> {
-                String keyword = input.readRequiredText("Name keyword: ");
+            case 1 -> results = studentController.searchByName(input.readRequiredText("Name keyword: "));
 
-                results = studentController.searchByName(keyword);
-            }
-
-            case 2 -> {
-                Long departmentId = selectDepartment();
-
-                results = studentController.filterByDepartment(departmentId);
-            }
+            case 2 -> results = studentController.filterByDepartment(selectDepartment());
 
             case 3 -> {
                 double minimum = input.readDouble("Minimum GPA: ");
-
                 double maximum = input.readDouble("Maximum GPA: ");
 
                 if (minimum > maximum) {
-                    throw new ValidationException(
-                            "Minimum GPA cannot exceed maximum GPA.");
+                    throw new ValidationException("Minimum GPA cannot exceed maximum GPA.");
                 }
 
                 results = studentController.filterByGpa(minimum, maximum);
@@ -339,9 +557,12 @@ public class ConsoleApplication {
 
             case 6 -> results = studentController.sortById();
 
-            default -> {
-                System.out.println("Invalid search option. Choose 1 to 6.");
+            case 0 -> {
+                return;
+            }
 
+            default -> {
+                System.out.println("Please choose a number from 0 to 6.");
                 return;
             }
         }
@@ -349,19 +570,23 @@ public class ConsoleApplication {
         printResults(results);
     }
 
-    private void addDepartment() {
+    private Department addDepartment() {
 
         System.out.println("\n--- Add Department ---");
 
-        Long id = input.readLong("Department ID: ");
-
         String name = input.readRequiredText("Department name: ");
 
-        Department department = departmentController.createDepartment(id, name);
+        try {
+            Department department = departmentController.createDepartment(nextDepartmentId(), name);
 
-        System.out.println("\nDepartment created successfully.");
+            System.out.println("\nDepartment added: " + department.getName());
 
-        System.out.println(department);
+            return department;
+
+        } catch (ValidationException | DuplicateDepartmentException exception) {
+            System.out.println("\nError: " + exception.getMessage());
+            return null;
+        }
     }
 
     private void viewAllDepartments() {
@@ -371,8 +596,7 @@ public class ConsoleApplication {
         List<Department> departments = departmentController.getAllDepartments();
 
         if (departments.isEmpty()) {
-            System.out.println("No departments found.");
-
+            System.out.println("No departments yet.");
             return;
         }
 
@@ -383,67 +607,66 @@ public class ConsoleApplication {
 
     private void updateDepartment() {
 
-        System.out.println("\n--- Update Department ---");
+        System.out.println("\n--- Rename Department ---");
 
-        Long id = input.readLong("Department ID: ");
+        Long id = selectDepartment();
 
         Department current = departmentController.getDepartmentById(id);
 
-        System.out.println("\nCurrent record:");
-
-        System.out.println(current);
+        System.out.println("\nCurrent name: " + current.getName());
 
         String newName = input.readRequiredText("New department name: ");
 
         Department updated = departmentController.updateDepartment(id, newName);
 
         System.out.println("\nDepartment updated successfully.");
-
         System.out.println(updated);
     }
 
     private void deleteDepartment() {
+
         System.out.println("\n--- Delete Department ---");
 
-        Long id = input.readLong("Department ID: ");
+        Long id = selectDepartment();
 
         Department department = departmentController.getDepartmentById(id);
 
-        System.out.println("\nDepartment to delete:");
-
-        System.out.println(department);
+        System.out.println("\nDepartment to delete: " + department.getName());
 
         if (input.readYesNo("Are you sure you want to delete this department?")) {
             departmentController.deleteDepartment(id);
-
             System.out.println("Department deleted successfully.");
         } else {
-            System.out.println("Delete operation cancelled.");
+            System.out.println("Delete cancelled.");
         }
     }
 
-    private void addCourse() {
+    private Course addCourse() {
 
         System.out.println("\n--- Add Course ---");
+        System.out.println("A course ID is generated automatically.");
 
-        Long id = input.readLong("Course ID: ");
+        while (true) {
+            String name = input.readRequiredText("Course name (e.g. Data Structures): ");
+            String code = input.readRequiredText("Course code (e.g. CS201): ");
+            int creditHours = input.readInt("Credit hours (e.g. 3): ");
 
-        String name = input.readRequiredText("Course name: ");
+            try {
+                Course course = courseController.createCourse(nextCourseId(), name, code, creditHours);
 
-        String code = input.readRequiredText("Course code: ");
+                System.out.println("\nCourse added successfully.");
+                System.out.println(course);
 
-        int creditHours = input.readInt("Credit hours: ");
+                return course;
 
-        Course course = courseController.createCourse(
-                id,
-                name,
-                code,
-                creditHours
-        );
+            } catch (ValidationException | DuplicateCourseException exception) {
+                System.out.println("\nError: " + exception.getMessage());
 
-        System.out.println("\nCourse created successfully.");
-
-        System.out.println(course);
+                if (!input.readYesNo("Re-enter the details?")) {
+                    return null;
+                }
+            }
+        }
     }
 
     private void viewAllCourses() {
@@ -453,8 +676,7 @@ public class ConsoleApplication {
         List<Course> courses = courseController.getAllCourses();
 
         if (courses.isEmpty()) {
-            System.out.println("No courses found.");
-
+            System.out.println("No courses yet. Choose \"Add a course\" to create one.");
             return;
         }
 
@@ -467,29 +689,20 @@ public class ConsoleApplication {
 
         System.out.println("\n--- Update Course ---");
 
-        Long id = input.readLong("Course ID: ");
+        Long id = selectCourse(false);
 
         Course current = courseController.getCourseById(id);
 
         System.out.println("\nCurrent record:");
-
         System.out.println(current);
 
         String name = input.readRequiredText("New course name: ");
-
         String code = input.readRequiredText("New course code: ");
-
         int creditHours = input.readInt("New credit hours: ");
 
-        Course updated = courseController.updateCourse(
-                id,
-                name,
-                code,
-                creditHours
-        );
+        Course updated = courseController.updateCourse(id, name, code, creditHours);
 
         System.out.println("\nCourse updated successfully.");
-
         System.out.println(updated);
     }
 
@@ -497,52 +710,49 @@ public class ConsoleApplication {
 
         System.out.println("\n--- Delete Course ---");
 
-        Long id = input.readLong("Course ID: ");
+        Long id = selectCourse(false);
 
         Course course = courseController.getCourseById(id);
 
         System.out.println("\nCourse to delete:");
-
         System.out.println(course);
 
         if (input.readYesNo("Are you sure you want to delete this course?")) {
             courseController.deleteCourse(id);
-
             System.out.println("Course deleted successfully.");
         } else {
-            System.out.println("Delete operation cancelled.");
+            System.out.println("Delete cancelled.");
         }
     }
 
     private void addEnrollment() {
 
-        System.out.println("\n--- Add Enrollment ---");
+        System.out.println("\n--- Enroll a Student in a Course ---");
+        System.out.println("Pick the student and course. You can add new ones from the lists if needed.");
 
-        Long id = input.readLong("Enrollment ID: ");
+        Long studentId = selectStudent(true);
+        Long courseId = selectCourse(true);
 
-        Long studentId = input.readLong("Student ID: ");
+        while (true) {
+            String semester = input.readRequiredText("\nSemester (e.g. Fall 2025): ");
+            String grade = input.readRequiredText("Grade (A+, A, A-, B+, B, B-, C+, C, C-, D, F): ");
 
-        studentController.getStudentById(studentId);
+            try {
+                Enrollment enrollment = enrollmentController.createEnrollment(nextEnrollmentId(), studentId, courseId, semester, grade);
 
-        Long courseId = input.readLong("Course ID: ");
+                System.out.println("\nEnrollment created successfully.");
+                System.out.println(describe(enrollment));
 
-        courseController.getCourseById(courseId);
+                return;
 
-        String semester = input.readRequiredText("Semester: ");
+            } catch (ValidationException exception) {
+                System.out.println("\nError: " + exception.getMessage());
 
-        String grade = input.readRequiredText("Grade: ");
-
-        Enrollment enrollment = enrollmentController.createEnrollment(
-                id,
-                studentId,
-                courseId,
-                semester,
-                grade
-        );
-
-        System.out.println("\nEnrollment created successfully.");
-
-        System.out.println(enrollment);
+                if (!input.readYesNo("Re-enter semester and grade?")) {
+                    return;
+                }
+            }
+        }
     }
 
     private void viewAllEnrollments() {
@@ -552,89 +762,95 @@ public class ConsoleApplication {
         List<Enrollment> enrollments = enrollmentController.getAllEnrollments();
 
         if (enrollments.isEmpty()) {
-            System.out.println("No enrollments found.");
-
+            System.out.println("No enrollments yet. Choose \"Enroll a student in a course\" to add one.");
             return;
         }
 
-        enrollments.forEach(System.out::println);
+        enrollments.forEach(enrollment -> System.out.println(describe(enrollment)));
 
         System.out.println("\nTotal: " + enrollments.size());
-    }
-
-    private void findEnrollmentById() {
-
-        System.out.println("\n--- Find Enrollment ---");
-
-        Long id = input.readLong("Enrollment ID: ");
-
-        Enrollment enrollment = enrollmentController.getEnrollmentById(id);
-
-        System.out.println("\nEnrollment found:");
-
-        System.out.println(enrollment);
     }
 
     private void updateEnrollment() {
 
         System.out.println("\n--- Update Enrollment ---");
 
-        Long id = input.readLong("Enrollment ID: ");
+        Long id = selectEnrollment();
 
         Enrollment current = enrollmentController.getEnrollmentById(id);
 
         System.out.println("\nCurrent record:");
+        System.out.println(describe(current));
 
-        System.out.println(current);
-
-        Long studentId = input.readLong("New Student ID: ");
-
-        studentController.getStudentById(studentId);
-
-        Long courseId = input.readLong("New Course ID: ");
-
-        courseController.getCourseById(courseId);
-
+        Long studentId = selectStudent(false);
+        Long courseId = selectCourse(false);
         String semester = input.readRequiredText("New semester: ");
-
         String grade = input.readRequiredText("New grade: ");
 
-        Enrollment updated = enrollmentController.updateEnrollment(
-                id,
-                studentId,
-                courseId,
-                semester,
-                grade
-        );
+        Enrollment updated = enrollmentController.updateEnrollment(id, studentId, courseId, semester, grade);
 
         System.out.println("\nEnrollment updated successfully.");
-
-        System.out.println(updated);
+        System.out.println(describe(updated));
     }
 
     private void deleteEnrollment() {
 
         System.out.println("\n--- Delete Enrollment ---");
 
-        Long id = input.readLong("Enrollment ID: ");
+        Long id = selectEnrollment();
 
         Enrollment enrollment = enrollmentController.getEnrollmentById(id);
 
         System.out.println("\nEnrollment to delete:");
-
-        System.out.println(enrollment);
+        System.out.println(describe(enrollment));
 
         if (input.readYesNo("Are you sure you want to delete this enrollment?")) {
             enrollmentController.deleteEnrollment(id);
-
             System.out.println("Enrollment deleted successfully.");
         } else {
-            System.out.println("Delete operation cancelled.");
+            System.out.println("Delete cancelled.");
         }
     }
 
+    private long nextStudentId() {
+        return studentController.sortById().stream().mapToLong(Student::getId).max().orElse(0) + 1;
+    }
+
+    private long nextDepartmentId() {
+        return departmentController.getAllDepartments().stream().mapToLong(Department::getId).max().orElse(0) + 1;
+    }
+
+    private long nextCourseId() {
+        return courseController.getAllCourses().stream().mapToLong(Course::getId).max().orElse(0) + 1;
+    }
+
+    private long nextEnrollmentId() {
+        return enrollmentController.getAllEnrollments().stream().mapToLong(Enrollment::getId).max().orElse(0) + 1;
+    }
+
     private String getDepartmentName(Student student) {
-        return departmentController.getDepartmentById(student.getDepartment()).getName();
+        return departmentController.getDepartmentById(student.getDepartmentId()).getName();
+    }
+
+    private String describe(Enrollment enrollment) {
+
+        String studentName = lookup(() -> studentController.getStudentById(enrollment.getStudentId()).getName());
+
+        String courseLabel = lookup(() -> {
+            Course course = courseController.getCourseById(enrollment.getCourseId());
+            return course.getCode() + " - " + course.getName();
+        });
+
+        return "Enrollment #" + enrollment.getId() + ": " + studentName + " -> " + courseLabel
+                + " | " + enrollment.getSemester() + " | Grade: " + enrollment.getGrade();
+    }
+
+    private String lookup(Supplier<String> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException exception) {
+            return "(unknown)";
+        }
     }
 
     private void printResults(List<Student> students) {
@@ -658,35 +874,43 @@ public class ConsoleApplication {
                 ========================================
                    STUDENT MANAGEMENT SYSTEM
                 ========================================
+                Tip: type the number of an option and press Enter.
+                At any question, press Enter on an empty line
+                to cancel and go back.
+                Sample departments and courses are already loaded,
+                so you can register your first student right away.
                 """);
     }
 
-    private void printMenu() {
+    private void printMainMenu() {
+
+        int students = studentController.sortById().size();
+        int departments = departmentController.getAllDepartments().size();
+        int courses = courseController.getAllCourses().size();
+        int enrollments = enrollmentController.getAllEnrollments().size();
 
         System.out.println("""
                 
-                ----------------------------------------
-                1. Add Student
-                2. View All Students
-                3. Find Student By ID
-                4. Update Student
-                5. Delete Student
-                6. Search Students
-                7. Add Department
-                8. View All Departments
-                9. Update Department
-                10. Delete Department
-                11. Add Course
-                12. View All Courses
-                13. Update Course
-                14. Delete Course
-                15. Add Enrollment
-                16. View All Enrollments
-                17. Find Enrollment By ID
-                18. Update Enrollment
-                19. Delete Enrollment
-                0. Exit
-                ----------------------------------------
+                ============== MAIN MENU ==============
+                """
+                + "  Students: " + students
+                + "  |  Departments: " + departments
+                + "  |  Courses: " + courses
+                + "  |  Enrollments: " + enrollments + "\n");
+
+        System.out.println("""
+                  1. Students
+                  2. Departments
+                  3. Courses
+                  4. Enrollments
+                  0. Exit
+                =======================================
                 """);
+
+        if (students == 0) {
+            System.out.println("Next step: open Students -> Register a new student.");
+        } else if (enrollments == 0) {
+            System.out.println("Next step: open Enrollments -> Enroll a student in a course.");
+        }
     }
 }

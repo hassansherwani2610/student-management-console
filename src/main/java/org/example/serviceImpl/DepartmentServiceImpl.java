@@ -76,7 +76,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         boolean hasStudent = studentRepository
                 .findAll()
                 .stream()
-                .anyMatch(student -> student.getDepartment().equals(id));
+                .anyMatch(student -> student.getDepartmentId().equals(id));
 
         if (hasStudent) {
             throw new EntityInUseException("Department with ID " + id + " cannot be deleted because students still belong to it. Move or delete those students first.");

@@ -90,7 +90,7 @@ public class StudentServiceImpl implements StudentService {
 
         departmentService.getDepartmentById(departmentId);
 
-        student.setDepartment(departmentId);
+        student.setDepartmentId(departmentId);
         return studentRepository.update(student);
     }
 
@@ -158,7 +158,7 @@ public class StudentServiceImpl implements StudentService {
         return studentRepository
                 .findAll()
                 .stream()
-                .filter(student -> student.getDepartment().equals(departmentId))
+                .filter(student -> student.getDepartmentId().equals(departmentId))
                 .sorted((student1, student2) -> student1.getName().compareToIgnoreCase(student2.getName()))
                 .toList();
     }

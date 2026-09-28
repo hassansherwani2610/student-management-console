@@ -24,7 +24,7 @@ public class Student {
         setName(name);
         setSeatNo(seatNo);
         setEmail(email);
-        setDepartment(departmentId);
+        setDepartmentId(departmentId);
         setGpa(gpa);
     }
 
@@ -74,11 +74,11 @@ public class Student {
         this.email = trimmedEmail;
     }
 
-    public Long getDepartment() {
+    public Long getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartment(Long departmentId) {
+    public void setDepartmentId(Long departmentId) {
         if (departmentId == null) {
             throw new ValidationException("DepartmentEnum cannot be empty.");
         }

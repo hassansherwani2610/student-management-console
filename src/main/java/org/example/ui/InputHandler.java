@@ -1,5 +1,7 @@
 package org.example.ui;
 
+import org.example.exception.OperationCancelledException;
+
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -10,10 +12,27 @@ public class InputHandler {
         this.scanner = scanner;
     }
 
+    public int readMenuChoice(String message) {
+        while (true) {
+            System.out.print(message);
+            String input = scanner.nextLine().trim();
+
+            try {
+                return Integer.parseInt(input);
+            } catch (NumberFormatException exception) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+
     public int readInt(String message) {
         while (true) {
             System.out.print(message);
             String input = scanner.nextLine().trim();
+
+            if (input.isEmpty()) {
+                throw new OperationCancelledException();
+            }
 
             try {
                 return Integer.parseInt(input);
@@ -28,6 +47,10 @@ public class InputHandler {
             System.out.print(message);
             String input = scanner.nextLine().trim();
 
+            if (input.isEmpty()) {
+                throw new OperationCancelledException();
+            }
+
             try {
                 return Long.parseLong(input);
             } catch (NumberFormatException exception) {
@@ -41,6 +64,10 @@ public class InputHandler {
             System.out.print(message);
             String input = scanner.nextLine().trim();
 
+            if (input.isEmpty()) {
+                throw new OperationCancelledException();
+            }
+
             try {
                 return Double.parseDouble(input);
             } catch (NumberFormatException exception) {
@@ -50,16 +77,14 @@ public class InputHandler {
     }
 
     public String readRequiredText(String message) {
-        while (true) {
-            System.out.print(message);
-            String input = scanner.nextLine().trim();
+        System.out.print(message);
+        String input = scanner.nextLine().trim();
 
-            if (!input.isEmpty()) {
-                return input;
-            }
-
-            System.out.println("Input cannot be empty. Please try again.");
+        if (input.isEmpty()) {
+            throw new OperationCancelledException();
         }
+
+        return input;
     }
 
     public boolean readYesNo(String message) {
