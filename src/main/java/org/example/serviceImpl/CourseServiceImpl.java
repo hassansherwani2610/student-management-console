@@ -29,6 +29,15 @@ public class CourseServiceImpl implements CourseService {
                 .anyMatch(course -> course.getCode().equalsIgnoreCase(formattedCode) && !Objects.equals(course.getId(), id));
     }
 
+    private boolean courseNameExists(String name, Long id) {
+        String formattedName = name.trim();
+
+        return courseRepository
+                .findAll()
+                .stream()
+                .anyMatch(course -> course.getName().equalsIgnoreCase(formattedName) && !Objects.equals(course.getId(), id));
+    }
+
     @Override
     public Course createCourse(Long id, String name, String code, int creditHours) {
         if (courseRepository.existsById(id)) {
@@ -37,6 +46,10 @@ public class CourseServiceImpl implements CourseService {
 
         if (courseCodeExists(code, null)) {
             throw new DuplicateCourseException("A course with code " + code + " already exists in our system.");
+        }
+
+        if (courseNameExists(name, null)) {
+            throw new DuplicateCourseException("A course named " + name + " already exists in our system.");
         }
 
         return courseRepository.save(new Course(id, name, code, creditHours));
@@ -62,6 +75,10 @@ public class CourseServiceImpl implements CourseService {
 
         if (courseCodeExists(updated.getCode(), id)) {
             throw new DuplicateCourseException("A course with code " + code + " already exists in our system.");
+        }
+
+        if (courseNameExists(updated.getName(), id)) {
+            throw new DuplicateCourseException("A course named " + name + " already exists in our system.");
         }
 
         return courseRepository.update(updated);

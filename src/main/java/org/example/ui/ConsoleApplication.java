@@ -61,6 +61,8 @@ public class ConsoleApplication {
         }
     }
 
+
+
     public void start() {
 
         seedDefaults();
@@ -730,7 +732,19 @@ public class ConsoleApplication {
                 continue;
             }
 
-            String code = input.readRequiredText("Course code (e.g. CS201): ");
+            String code;
+
+            while (true) {
+                code = input.readRequiredText("Course code (e.g. CS201): ");
+
+                if (courseCodeExists(code, null)) {
+                    System.out.println("\nA course with code \"" + code + "\" is already present in the system. Please enter a different code.");
+                    continue;
+                }
+
+                break;
+            }
+
             int creditHours = input.readInt("Credit hours (e.g. 3): ");
 
             try {
@@ -786,7 +800,19 @@ public class ConsoleApplication {
                 continue;
             }
 
-            String code = input.readRequiredText("New course code: ");
+            String code;
+
+            while (true) {
+                code = input.readRequiredText("New course code: ");
+
+                if (courseCodeExists(code, id)) {
+                    System.out.println("\nA course with code \"" + code + "\" is already present in the system. Please enter a different code.");
+                    continue;
+                }
+
+                break;
+            }
+
             int creditHours = input.readInt("New credit hours: ");
 
             try {
@@ -960,6 +986,12 @@ public class ConsoleApplication {
     private boolean courseNameExists(String name, Long excludeId) {
         return courseController.getAllCourses().stream()
                 .anyMatch(course -> course.getName().equalsIgnoreCase(name)
+                        && !course.getId().equals(excludeId));
+    }
+
+    private boolean courseCodeExists(String code, Long excludeId) {
+        return courseController.getAllCourses().stream()
+                .anyMatch(course -> course.getCode().equalsIgnoreCase(code)
                         && !course.getId().equals(excludeId));
     }
 
