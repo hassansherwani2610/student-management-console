@@ -39,10 +39,10 @@ The project is intentionally framework-free. It focuses on core object-oriented 
 
 ## 2. Demo
 
-| Resource | Link |
-|----------|------|
-| Source Code (GitHub) | https://github.com/hassansherwani2610/student-management-console |
-| Source Code (GitLab) | https://gitlab.com/HassanS10/student-management-console |
+| Resource                       | Link |
+|--------------------------------|------|
+| Source Code (GitHub) (Public)  | https://github.com/hassansherwani2610/student-management-console |
+| Source Code (GitLab) (Private) | https://gitlab.com/HassanS10/student-management-console |
 
 <!-- Replace "Coming soon" with the real links when available, e.g.:
 [![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
