@@ -80,7 +80,7 @@ public class Student {
 
     public void setDepartmentId(Long departmentId) {
         if (departmentId == null) {
-            throw new ValidationException("DepartmentEnum cannot be empty.");
+            throw new ValidationException("Department cannot be empty.");
         }
 
         this.departmentId = departmentId;

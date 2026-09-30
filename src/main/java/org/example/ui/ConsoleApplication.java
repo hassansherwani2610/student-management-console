@@ -5,6 +5,7 @@ import org.example.controller.DepartmentController;
 import org.example.controller.EnrollmentController;
 import org.example.controller.StudentController;
 import org.example.exception.common.EntityInUseException;
+import org.example.exception.common.OperationCancelledException;
 import org.example.exception.common.ValidationException;
 import org.example.exception.course.CourseNotFoundException;
 import org.example.exception.course.DuplicateCourseException;
@@ -21,6 +22,7 @@ import org.example.model.Student;
 
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 public class ConsoleApplication {
 
@@ -30,6 +32,7 @@ public class ConsoleApplication {
     private final EnrollmentController enrollmentController;
     private final InputHandler input;
     private boolean running = true;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     public ConsoleApplication(StudentController studentController, DepartmentController departmentController, CourseController courseController, EnrollmentController enrollmentController, InputHandler input) {
         this.studentController = studentController;
@@ -77,7 +80,9 @@ public class ConsoleApplication {
 
     private void reportError(RuntimeException exception) {
 
-        if (exception instanceof EntityInUseException) {
+        if (exception instanceof OperationCancelledException) {
+            System.out.println("\nCancelled.");
+        } else if (exception instanceof EntityInUseException) {
             System.out.println("\nCannot delete: " + exception.getMessage());
             System.out.println("Tip: remove the related records first, then try again.");
         } else if (exception instanceof ValidationException
@@ -392,9 +397,9 @@ public class ConsoleApplication {
         while (true) {
             String name = input.readRequiredText("Full name: ");
             String seatNo = input.readRequiredText("Seat number: ");
-            String email = input.readRequiredText("Email: ");
+            String email = readValidEmail("Email: ");
             Long departmentId = selectDepartment();
-            double gpa = input.readDouble("\nGPA (0.0 - 4.0): ");
+            double gpa = readValidGpa("\nGPA (0.0 - 4.0): ");
 
             try {
                 Student student = studentController.createStudent(nextStudentId(), name, seatNo, email, departmentId, gpa);
@@ -404,7 +409,7 @@ public class ConsoleApplication {
 
                 return student;
 
-            } catch (ValidationException exception) {
+            } catch (ValidationException | DuplicateStudentException exception) {
                 System.out.println("\nError: " + exception.getMessage());
 
                 if (!input.readYesNo("Re-enter the details?")) {
@@ -473,23 +478,15 @@ public class ConsoleApplication {
 
             case 1 -> updated = studentController.updateName(id, input.readRequiredText("New name: "));
 
-            case 2 -> updated = studentController.updateEmail(id, input.readRequiredText("New email: "));
+            case 2 -> updated = updateEmailWithRetry(id);
 
             case 3 -> updated = studentController.updateDepartment(id, selectDepartment());
 
-            case 4 -> updated = studentController.updateGpa(id, input.readDouble("New GPA (0.0 - 4.0): "));
+            case 4 -> updated = studentController.updateGpa(id, readValidGpa("New GPA (0.0 - 4.0): "));
 
             case 5 -> updated = studentController.updateSeatNo(id, input.readRequiredText("New seat number: "));
 
-            case 6 -> {
-                String name = input.readRequiredText("New name: ");
-                String seatNo = input.readRequiredText("New seat number: ");
-                String email = input.readRequiredText("New email: ");
-                Long departmentId = selectDepartment();
-                double gpa = input.readDouble("New GPA (0.0 - 4.0): ");
-
-                updated = studentController.updateAll(id, name, seatNo, email, departmentId, gpa);
-            }
+            case 6 -> updated = updateAllWithRetry(id);
 
             case 0 -> {
                 System.out.println("Update cancelled.");
@@ -504,6 +501,33 @@ public class ConsoleApplication {
 
         System.out.println("\nStudent updated successfully.");
         System.out.println(updated.toString(getDepartmentName(updated)));
+    }
+
+    private Student updateEmailWithRetry(Long id) {
+        while (true) {
+            String email = readValidEmail("New email: ");
+            try {
+                return studentController.updateEmail(id, email);
+            } catch (DuplicateStudentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            }
+        }
+    }
+
+    private Student updateAllWithRetry(Long id) {
+        while (true) {
+            String name = input.readRequiredText("New name: ");
+            String seatNo = input.readRequiredText("New seat number: ");
+            String email = readValidEmail("New email: ");
+            Long departmentId = selectDepartment();
+            double gpa = readValidGpa("New GPA (0.0 - 4.0): ");
+
+            try {
+                return studentController.updateAll(id, name, seatNo, email, departmentId, gpa);
+            } catch (ValidationException | DuplicateStudentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            }
+        }
     }
 
     private void deleteStudent() {
@@ -550,8 +574,8 @@ public class ConsoleApplication {
             case 2 -> results = studentController.filterByDepartment(selectDepartment());
 
             case 3 -> {
-                double minimum = input.readDouble("Minimum GPA: ");
-                double maximum = input.readDouble("Maximum GPA: ");
+                double minimum = readValidGpa("Minimum GPA (0.0 - 4.0): ");
+                double maximum = readValidGpa("Maximum GPA (0.0 - 4.0): ");
 
                 if (minimum > maximum) {
                     throw new ValidationException("Minimum GPA cannot exceed maximum GPA.");
@@ -583,18 +607,28 @@ public class ConsoleApplication {
 
         System.out.println("\n--- Add Department ---");
 
-        String name = input.readRequiredText("Department name: ");
+        while (true) {
+            String name = input.readRequiredText("Department name: ");
 
-        try {
-            Department department = departmentController.createDepartment(nextDepartmentId(), name);
+            if (departmentNameExists(name, null)) {
+                System.out.println("\nA department named \"" + name + "\" is already present in the system. Please enter a different name.");
+                continue;
+            }
 
-            System.out.println("\nDepartment added: " + department.getName());
+            try {
+                Department department = departmentController.createDepartment(nextDepartmentId(), name);
 
-            return department;
+                System.out.println("\nDepartment added: " + department.getName());
 
-        } catch (ValidationException | DuplicateDepartmentException exception) {
-            System.out.println("\nError: " + exception.getMessage());
-            return null;
+                return department;
+
+            } catch (ValidationException | DuplicateDepartmentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+
+                if (!input.readYesNo("Re-enter the details?")) {
+                    return null;
+                }
+            }
         }
     }
 
@@ -624,12 +658,26 @@ public class ConsoleApplication {
 
         System.out.println("\nCurrent name: " + current.getName());
 
-        String newName = input.readRequiredText("New department name: ");
+        while (true) {
+            String newName = input.readRequiredText("New department name: ");
 
-        Department updated = departmentController.updateDepartment(id, newName);
+            if (departmentNameExists(newName, id)) {
+                System.out.println("\nA department named \"" + newName + "\" is already present in the system. Please enter a different name.");
+                continue;
+            }
 
-        System.out.println("\nDepartment updated successfully.");
-        System.out.println(updated);
+            try {
+                Department updated = departmentController.updateDepartment(id, newName);
+
+                System.out.println("\nDepartment updated successfully.");
+                System.out.println(updated);
+
+                return;
+
+            } catch (ValidationException | DuplicateDepartmentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            }
+        }
     }
 
     private void deleteDepartment() {
@@ -657,6 +705,12 @@ public class ConsoleApplication {
 
         while (true) {
             String name = input.readRequiredText("Course name (e.g. Data Structures): ");
+
+            if (courseNameExists(name, null)) {
+                System.out.println("\nA course named \"" + name + "\" is already present in the system. Please enter a different name.");
+                continue;
+            }
+
             String code = input.readRequiredText("Course code (e.g. CS201): ");
             int creditHours = input.readInt("Credit hours (e.g. 3): ");
 
@@ -705,14 +759,29 @@ public class ConsoleApplication {
         System.out.println("\nCurrent record:");
         System.out.println(current);
 
-        String name = input.readRequiredText("New course name: ");
-        String code = input.readRequiredText("New course code: ");
-        int creditHours = input.readInt("New credit hours: ");
+        while (true) {
+            String name = input.readRequiredText("New course name: ");
 
-        Course updated = courseController.updateCourse(id, name, code, creditHours);
+            if (courseNameExists(name, id)) {
+                System.out.println("\nA course named \"" + name + "\" is already present in the system. Please enter a different name.");
+                continue;
+            }
 
-        System.out.println("\nCourse updated successfully.");
-        System.out.println(updated);
+            String code = input.readRequiredText("New course code: ");
+            int creditHours = input.readInt("New credit hours: ");
+
+            try {
+                Course updated = courseController.updateCourse(id, name, code, creditHours);
+
+                System.out.println("\nCourse updated successfully.");
+                System.out.println(updated);
+
+                return;
+
+            } catch (ValidationException | DuplicateCourseException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+            }
+        }
     }
 
     private void deleteCourse() {
@@ -743,8 +812,8 @@ public class ConsoleApplication {
         Long courseId = selectCourse(true);
 
         while (true) {
-            String semester = input.readRequiredText("\nSemester (e.g. Fall 2025): ");
-            String grade = input.readRequiredText("Grade (A+, A, A-, B+, B, B-, C+, C, C-, D, F): ");
+            String semester = input.readRequiredText("\nSemester (e.g. 4th, 5th, 6th): ");
+            String grade = input.readRequiredText("Grade (A, B, C, D, F): ");
 
             try {
                 Enrollment enrollment = enrollmentController.createEnrollment(nextEnrollmentId(), studentId, courseId, semester, grade);
@@ -754,7 +823,7 @@ public class ConsoleApplication {
 
                 return;
 
-            } catch (ValidationException exception) {
+            } catch (ValidationException | DuplicateEnrollmentException exception) {
                 System.out.println("\nError: " + exception.getMessage());
 
                 if (!input.readYesNo("Re-enter semester and grade?")) {
@@ -793,13 +862,27 @@ public class ConsoleApplication {
 
         Long studentId = selectStudent(false);
         Long courseId = selectCourse(false);
-        String semester = input.readRequiredText("New semester: ");
-        String grade = input.readRequiredText("New grade: ");
 
-        Enrollment updated = enrollmentController.updateEnrollment(id, studentId, courseId, semester, grade);
+        while (true) {
+            String semester = input.readRequiredText("\nSemester (e.g. 4th, 5th, 6th): ");
+            String grade = input.readRequiredText("Grade (A, B, C, D, F): ");
 
-        System.out.println("\nEnrollment updated successfully.");
-        System.out.println(describe(updated));
+            try {
+                Enrollment updated = enrollmentController.updateEnrollment(id, studentId, courseId, semester, grade);
+
+                System.out.println("\nEnrollment updated successfully.");
+                System.out.println(describe(updated));
+
+                return;
+
+            } catch (ValidationException | DuplicateEnrollmentException exception) {
+                System.out.println("\nError: " + exception.getMessage());
+
+                if (!input.readYesNo("Re-enter semester and grade?")) {
+                    return;
+                }
+            }
+        }
     }
 
     private void deleteEnrollment() {
@@ -819,6 +902,46 @@ public class ConsoleApplication {
         } else {
             System.out.println("Delete cancelled.");
         }
+    }
+
+    private String readValidEmail(String prompt) {
+        while (true) {
+            String email = input.readRequiredText(prompt);
+
+            if (isValidEmail(email)) {
+                return email;
+            }
+
+            System.out.println("Please enter a correct email address (e.g. name@example.com).");
+        }
+    }
+
+    private boolean isValidEmail(String email) {
+        return EMAIL_PATTERN.matcher(email).matches();
+    }
+
+    private double readValidGpa(String prompt) {
+        while (true) {
+            double gpa = input.readDouble(prompt);
+
+            if (gpa >= 0.0 && gpa <= 4.0) {
+                return gpa;
+            }
+
+            System.out.println("Please enter a correct GPA between 0.0 and 4.0.");
+        }
+    }
+
+    private boolean departmentNameExists(String name, Long excludeId) {
+        return departmentController.getAllDepartments().stream()
+                .anyMatch(department -> department.getName().equalsIgnoreCase(name)
+                        && !department.getId().equals(excludeId));
+    }
+
+    private boolean courseNameExists(String name, Long excludeId) {
+        return courseController.getAllCourses().stream()
+                .anyMatch(course -> course.getName().equalsIgnoreCase(name)
+                        && !course.getId().equals(excludeId));
     }
 
     private long nextStudentId() {
@@ -902,10 +1025,10 @@ public class ConsoleApplication {
                 
                 ============== MAIN MENU ==============
                 """
-                + "  Students: " + students
-                + "  |  Departments: " + departments
-                + "  |  Courses: " + courses
-                + "  |  Enrollments: " + enrollments + "\n");
+                + "  Total Students: " + students
+                + "  |  Total Departments: " + departments
+                + "  |  Total Courses: " + courses
+                + "  |  Total Enrollments: " + enrollments + "\n");
 
         System.out.println("""
                   1. Students
