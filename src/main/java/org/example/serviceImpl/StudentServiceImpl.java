@@ -33,6 +33,15 @@ public class StudentServiceImpl implements StudentService {
                 .anyMatch(student -> student.getEmail().equalsIgnoreCase(formattedEmail) && !Objects.equals(student.getId(), id));
     }
 
+    private boolean seatNoExists(String seatNo, Long id) {
+        String formattedSeatNo = seatNo.trim();
+
+        return studentRepository
+                .findAll()
+                .stream()
+                .anyMatch(student -> student.getSeatNo().equalsIgnoreCase(formattedSeatNo) && !Objects.equals(student.getId(), id));
+    }
+
 
     @Override
     public Student createStudent(Long id, String name, String seatNo, String email, Long departmentId, double gpa) {
@@ -44,11 +53,13 @@ public class StudentServiceImpl implements StudentService {
             throw new DuplicateStudentException("A student with email " + email + " already exists in our system.");
         }
 
+        if (seatNoExists(seatNo, null)) {
+            throw new DuplicateStudentException("A student with seat number " + seatNo + " already exists in our system.");
+        }
+
         departmentService.getDepartmentById(departmentId);
 
-        Student student = studentRepository.save(new Student(id, name, seatNo, email, departmentId, gpa));
-
-        return student;
+        return studentRepository.save(new Student(id, name, seatNo, email, departmentId, gpa));
     }
 
     @Override
@@ -69,7 +80,7 @@ public class StudentServiceImpl implements StudentService {
     public Student updateName(Long id, String newName) {
         Student student = getStudentById(id);
         student.setName(newName);
-        return studentRepository.save(student);
+        return studentRepository.update(student);
     }
 
     @Override
@@ -104,6 +115,11 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public Student updateSeatNo(Long id, String seatNo) {
         Student student = getStudentById(id);
+
+        if (seatNoExists(seatNo, id)) {
+            throw new DuplicateStudentException("A student with seat number " + seatNo + " already exists in our system.");
+        }
+
         student.setSeatNo(seatNo);
         return studentRepository.update(student);
     }
@@ -116,6 +132,10 @@ public class StudentServiceImpl implements StudentService {
 
         if (emailExists(updated.getEmail(), id)) {
             throw new DuplicateStudentException("A student with email " + email + " already exists in our system.");
+        }
+
+        if (seatNoExists(updated.getSeatNo(), id)) {
+            throw new DuplicateStudentException("A student with seat number " + seatNo + " already exists in our system.");
         }
 
         departmentService.getDepartmentById(departmentId);

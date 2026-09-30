@@ -42,6 +42,25 @@ public class ConsoleApplication {
         this.input = input;
     }
 
+    private boolean seatNoExists(String seatNo, Long excludeId) {
+        return studentController.sortById().stream()
+                .anyMatch(student -> student.getSeatNo().equalsIgnoreCase(seatNo)
+                        && !student.getId().equals(excludeId));
+    }
+
+    private String readUniqueSeatNo(String prompt, Long excludeId) {
+        while (true) {
+            String seatNo = input.readRequiredText(prompt);
+
+            if (seatNoExists(seatNo, excludeId)) {
+                System.out.println("\nA student with seat number \"" + seatNo + "\" is already present in the system. Please enter a different seat number.");
+                continue;
+            }
+
+            return seatNo;
+        }
+    }
+
     public void start() {
 
         seedDefaults();
@@ -396,7 +415,7 @@ public class ConsoleApplication {
 
         while (true) {
             String name = input.readRequiredText("Full name: ");
-            String seatNo = input.readRequiredText("Seat number: ");
+            String seatNo = readUniqueSeatNo("Seat number: ", null);
             String email = readValidEmail("Email: ");
             Long departmentId = selectDepartment();
             double gpa = readValidGpa("\nGPA (0.0 - 4.0): ");
@@ -484,7 +503,7 @@ public class ConsoleApplication {
 
             case 4 -> updated = studentController.updateGpa(id, readValidGpa("New GPA (0.0 - 4.0): "));
 
-            case 5 -> updated = studentController.updateSeatNo(id, input.readRequiredText("New seat number: "));
+            case 5 -> updated = studentController.updateSeatNo(id, readUniqueSeatNo("New seat number: ", id));
 
             case 6 -> updated = updateAllWithRetry(id);
 
@@ -517,7 +536,7 @@ public class ConsoleApplication {
     private Student updateAllWithRetry(Long id) {
         while (true) {
             String name = input.readRequiredText("New name: ");
-            String seatNo = input.readRequiredText("New seat number: ");
+            String seatNo = readUniqueSeatNo("New seat number: ", id);
             String email = readValidEmail("New email: ");
             Long departmentId = selectDepartment();
             double gpa = readValidGpa("New GPA (0.0 - 4.0): ");
