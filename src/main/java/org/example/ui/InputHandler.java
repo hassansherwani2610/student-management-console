@@ -17,6 +17,10 @@ public class InputHandler {
             System.out.print(message);
             String input = scanner.nextLine().trim();
 
+            if (input.isEmpty()) {
+                throw new OperationCancelledException();
+            }
+
             try {
                 return Integer.parseInt(input);
             } catch (NumberFormatException exception) {

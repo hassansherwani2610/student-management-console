@@ -61,8 +61,6 @@ public class ConsoleApplication {
         }
     }
 
-
-
     public void start() {
 
         seedDefaults();
